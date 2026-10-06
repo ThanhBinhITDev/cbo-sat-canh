@@ -57,10 +57,10 @@ Lớp nào cũng phải qua — không được bỏ lớp nào.
 
 ```sql
 -- ví dụ: chỉ admin/editor sửa bài
+-- Hàm is_editor()/is_admin() khai báo SECURITY DEFINER (§10.1)
+-- nên không tự đệ quy chính bảng profiles.
 CREATE POLICY "staff update posts" ON posts
-  FOR UPDATE USING (
-    (SELECT role FROM profiles WHERE id = auth.uid()) IN ('admin','editor')
-  );
+  FOR UPDATE USING (public.is_editor());
 ```
 
 Ngay cả khi hacker sửa giao diện, database vẫn chặn.
@@ -70,14 +70,19 @@ Ngay cả khi hacker sửa giao diện, database vẫn chặn.
 | Bảng | SELECT | INSERT | UPDATE | DELETE |
 |---|---|---|---|---|
 | `profiles` | bản thân / admin | trigger | admin (không tự đổi vai trò mình) | admin |
-| `posts` | `status='published'` OR staff | admin, editor | admin, editor | admin |
+| `posts` | `status='published'` OR staff | admin, editor (phải `author_id = auth.uid()`) | admin, editor | admin |
 | `services` | `is_active` | admin | admin | admin |
 | `partners` | `is_active` | admin | admin | admin |
 | `team_members` | `is_active` | admin | admin | admin |
 | `site_settings` | ai cũng được | admin | admin | admin |
-| `media` | ai cũng được | admin | admin | admin |
+| `media` | ai cũng được | admin, hoặc editor với ảnh `kind='other'` do chính mình tải lên | như INSERT | admin |
 | `contact_messages` | admin, editor, collaborator | anon + service role (API) | admin, editor | admin |
 | `newsletters` | admin, collaborator | anon + service role (API) | admin | admin |
+
+> **Quy ước thư viện ảnh:** mọi tệp do nhân sự tải lên nằm ở thư mục con
+> `uploads/<user-id>/` trong bucket `site-assets`. Policy `storage.objects` chặn
+> editor ghi/xoá ngoài thư mục của mình; mọi thao tác xoá ảnh trên giao diện
+> chỉ dành cho `admin`.
 
 > `anon key` không được phép ghi `contact_messages`/`newsletters` trực tiếp —
 > mọi lượt ghi đi qua API route trên Vercel để có rate limit và kiểm tra đầu vào.

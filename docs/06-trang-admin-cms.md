@@ -80,7 +80,8 @@ middleware chặn phía server **và** RLS chặn phía database (3 lớp).
 | SEO title / description | ❌ | Ô riêng, có bộ đếm ký tự |
 | Trạng thái | ✅ | Nháp / Xuất bản |
 
-Nút: **Lưu nháp** · **Xuất bản** · **Xem trước** · **Xoá** (hỏi xác nhận).
+Nút: **Lưu nháp** · **Xuất bản** · **Xem trước**.
+Xoá bài nằm ở **danh sách** `/admin/bai-viet`, chỉ `admin` thấy nút này.
 
 ### Dịch vụ `/admin/dich-vu`
 
@@ -124,7 +125,9 @@ Mỗi thẻ có nút **Lưu**, có cảnh báo chưa lưu khi rời trang.
 - Lưới thumbnail, lọc theo `kind`.
 - **Tải lên**: kéo-thả → Supabase Storage bucket `site-assets` → lưu `media`.
 - **Thêm URL**: dán link Google Drive / dịch vụ lấy link (tự chuyển sang link ảnh).
-- Nhấp vào ảnh → hộp thoại: preview, ô `alt`, nút **Copy URL**, **Xoá**.
+- Nhấp vào ảnh → hộp thoại: preview, ô `alt`, nút **Copy URL**.
+- Biên tập viên chỉ sửa được `alt` của ảnh do mình tải lên; đổi loại ảnh
+  (banner/logo/trang trí) và **Xoá** chỉ dành cho `admin`.
 
 ### Câu hỏi liên hệ `/admin/cau-hoi`
 

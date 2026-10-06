@@ -206,7 +206,17 @@ Chi tiết ở [10-phan-quyen-va-bao-mat.md](./10-phan-quyen-va-bao-mat.md).
 
 ## 4.5. Dữ liệu seed
 
-Chạy một lần sau khi tạo database: `npm run db:seed`.
+Chạy một lần sau khi tạo database — mở Supabase **SQL Editor** (hoặc MCP Supabase) và chạy theo thứ tự:
+
+1. `supabase/migrations/20261006000001_init.sql` — schema, trigger, RLS, storage bucket
+2. `supabase/seed.sql` — 4 dịch vụ, 10 đối tác, nội dung tĩnh, 3 bài viết mẫu
+
+Tài khoản `admin` đầu tiên: Supabase **Authentication → Users → Add user**
+(thêm user_metadata `full_name`, mật khẩu ≥ 8 ký tự) rồi ở SQL Editor chạy
+
+```sql
+update public.profiles set role = 'admin' where email = 'ban@email.com';
+```
 
 - 4 `services`
 - 10 `partners` (chia 3 nhóm, logo đã đổi tên file)
