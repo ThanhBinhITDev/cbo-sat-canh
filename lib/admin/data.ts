@@ -170,3 +170,88 @@ export async function checkTables(): Promise<string | null> {
     ? `Bảng chưa tồn tại (hãy chạy migration): ${missing.join(", ")}`
     : null;
 }
+
+/* ------------------------------------------------------------------ *
+ * Biểu đồ & lối tắt
+ * ------------------------------------------------------------------ */
+
+/** Số câu hỏi theo ngày, 14 ngày gần nhất (index 0 = hôm nay - 13). */
+export async function getMessagesPerDay(): Promise<AdminValue<number[]>> {
+  const supabase = await createClient();
+  if (!supabase) return failValue(NOT_CONFIGURED.message, NOT_CONFIGURED.detail);
+
+  const { data, error } = await supabase
+    .from("contact_messages")
+    .select("created_at");
+
+  if (error)
+    return failValue("Không tải được biểu đồ câu hỏi.", error.message);
+
+  const days: string[] = [];
+  const base = new Date();
+  base.setHours(0, 0, 0, 0);
+  base.setDate(base.getDate() - 13);
+  for (let i = 0; i < 14; i++) {
+    const d = new Date(base);
+    d.setDate(base.getDate() + i);
+    days.push(
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+        d.getDate(),
+      ).padStart(2, "0")}`,
+    );
+  }
+
+  const counts = new Array(14).fill(0) as number[];
+  for (const row of (data ?? []) as { created_at: string }[]) {
+    const d = new Date(row.created_at);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+      d.getDate(),
+    ).padStart(2, "0")}`;
+    const idx = days.indexOf(key);
+    if (idx >= 0) counts[idx] += 1;
+  }
+
+  return { ok: true, value: counts };
+}
+
+export type LinkCounts = {
+  newMessages: number;
+  posts: number;
+  services: number;
+  team: number;
+};
+
+export async function getLinkCounts(): Promise<AdminValue<LinkCounts>> {
+  const supabase = await createClient();
+  if (!supabase) return failValue(NOT_CONFIGURED.message, NOT_CONFIGURED.detail);
+
+  const [messages, posts, services, team] = await Promise.all([
+    supabase.from("contact_messages").select("id, status"),
+    supabase.from("posts").select("id"),
+    supabase.from("services").select("id"),
+    supabase.from("team_members").select("id"),
+  ]);
+
+  if (messages.error || posts.error || services.error || team.error) {
+    return failValue(
+      "Không tải được số liệu lối tắt.",
+      messages.error?.message ??
+        posts.error?.message ??
+        services.error?.message ??
+        team.error?.message ??
+        "",
+    );
+  }
+
+  return {
+    ok: true,
+    value: {
+      newMessages: ((messages.data ?? []) as { status: string }[]).filter(
+        (r) => r.status === "new",
+      ).length,
+      posts: (posts.data ?? []).length,
+      services: (services.data ?? []).length,
+      team: (team.data ?? []).length,
+    },
+  };
+}

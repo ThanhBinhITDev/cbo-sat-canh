@@ -37,12 +37,18 @@
 }
 
 /* --- Căn bản --- */
-* {
-  border-color: var(--brand-line);
+@layer base {
+  * {
+    border-color: var(--brand-line);
+  }
+
+  /* Locked #16: không vẽ vòng focus ở nút, link, tab, card — ô nhập giữ ring riêng (`.input:focus`). */
+  :focus-visible {
+    outline: none;
+  }
 }
 
 html {
-  scroll-behavior: smooth;
   scroll-padding-top: 84px;
   -webkit-text-size-adjust: 100%;
 }
@@ -74,11 +80,7 @@ a {
   text-decoration: none;
 }
 
-:focus-visible {
-  outline: 2px solid var(--brand-primary);
-  outline-offset: 2px;
-  border-radius: 4px;
-}
+/* Locked #16: không vẽ vòng focus ở nút, link, tab, chip, card, dòng. */
 
 /* --- Tiện ích dùng lại --- */
 .container-site {
@@ -116,7 +118,7 @@ a {
 
 .card {
   background: var(--brand-surface);
-  border: 1px solid var(--brand-line);
+  border: 1px solid var(--brand-muted);
   border-radius: var(--brand-radius);
   transition:
     transform 0.2s ease,
@@ -128,6 +130,11 @@ a {
   transform: translateY(-4px);
   border-color: color-mix(in srgb, var(--brand-primary) 45%, var(--brand-line));
   box-shadow: 0 14px 34px -18px rgb(0 0 0 / 0.35);
+}
+
+/* Panel trượt (drawer mobile): shadow-modal theo layouts/overlay.md. */
+.shadow-modal {
+  box-shadow: 0 24px 48px -12px rgb(0 0 0 / 0.35);
 }
 
 .btn {
@@ -154,7 +161,6 @@ a {
 .btn-primary {
   background: var(--brand-primary);
   color: #fff;
-  box-shadow: 0 10px 24px -14px color-mix(in srgb, var(--brand-primary) 90%, #000);
 }
 
 .btn-primary:hover {
@@ -324,7 +330,7 @@ html.no-fouc * {
 
 .input::placeholder,
 .textarea::placeholder {
-  color: color-mix(in srgb, var(--brand-ink) 45%, transparent);
+  color: color-mix(in srgb, var(--brand-ink) 80%, transparent);
 }
 
 .table-admin {
@@ -335,11 +341,11 @@ html.no-fouc * {
 
 .table-admin thead th {
   text-align: left;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: color-mix(in srgb, var(--brand-ink) 65%, transparent);
+  color: color-mix(in srgb, var(--brand-ink) 85%, transparent);
   padding: 0.75rem 1rem;
   background: var(--brand-muted);
   border-bottom: 1px solid var(--brand-line);
@@ -368,7 +374,7 @@ html.no-fouc * {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 800;
   padding: 0.22rem 0.6rem;
   border-radius: 999px;
@@ -424,10 +430,135 @@ html.no-fouc * {
   font-weight: 600;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
+/* --- Bảng dữ liệu: cuộn ngang, cột dính, đổi sang danh sách trên mobile --- */
+.tbl-scroll {
+  overflow-x: auto;
+  container-type: inline-size;
+}
+.tbl-scroll th:first-child,
+.tbl-scroll td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--brand-surface);
+}
+.tbl-scroll thead th:first-child {
+  z-index: 2;
+  background: var(--brand-muted);
+}
+.tbl-scroll tbody tr:hover td:first-child {
+  background: #eef7fc;
+}
+@container (max-width: 680px) {
+  .tbl-msg .col-aux {
+    display: none;
   }
+}
+@container (max-width: 980px) {
+  .tbl-post .col-aux {
+    display: none;
+  }
+}
+.post-view {
+  container-type: inline-size;
+}
+.tbl-list {
+  display: none;
+}
+@container (max-width: 600px) {
+  .tbl-post {
+    display: none;
+  }
+  .tbl-list {
+    display: block;
+  }
+}
+
+/* --- Lối tắt --- */
+.links-card {
+  container-type: inline-size;
+}
+.links-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@container (max-width: 240px) {
+  .links-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* --- Vai màu trạng thái --- */
+.dot-new {
+  background: #10b981;
+}
+.err-icon {
+  color: #f87171;
+}
+.t-danger {
+  color: #dc2626;
+}
+.t-danger:hover {
+  background: #fef2f2;
+}
+.t-note {
+  display: flex;
+  gap: 0.5rem;
+  border: 1px solid #fde68a;
+  background: #fffbeb;
+  border-radius: 12px;
+  padding: 0.625rem 0.75rem;
+  color: #45403a;
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+.t-note b {
+  color: #92400e;
+  font-weight: 700;
+}
+.t-note svg {
+  color: #b45309;
+}
+
+/* --- Thanh cuộn mảnh, chỉ hiện khi rê/cuộn --- */
+* {
+  --scrollbar-thumb: transparent;
+}
+*::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: #7b8794;
+}
+*:hover,
+*:focus,
+*:active {
+  --scrollbar-thumb: #cbd5dd;
+}
+
+@layer base {
+  p,
+  li,
+  td,
+  th,
+  span {
+    text-wrap: pretty;
+  }
+  .grid > * {
+    min-width: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;

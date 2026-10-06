@@ -85,7 +85,7 @@ export default function AdminShell({
           <p className="truncate text-sm font-extrabold leading-tight text-primary-dark">
             CBO Sát Cánh
           </p>
-          <p className="truncate text-[0.7rem] text-ink/55">Quản trị nội dung</p>
+          <p className="truncate text-xs text-ink/80">Quản trị nội dung</p>
         </div>
         <button
           type="button"
@@ -105,18 +105,13 @@ export default function AdminShell({
               key={item.href}
               href={item.href}
               onClick={() => setOpen(false)}
-              className={`mb-1 flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition ${
+              className={`mb-1 flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm transition ${
                 active
-                  ? "text-white shadow-sm"
-                  : "text-ink/70 hover:bg-muted hover:text-primary-dark"
+                  ? "bg-primary/10 font-medium text-primary-dark"
+                  : "font-normal text-ink/80 hover:bg-muted hover:text-primary-dark"
               }`}
-              style={
-                active
-                  ? { background: "var(--brand-primary)" }
-                  : undefined
-              }
             >
-              <span className={active ? "text-white" : "text-primary"}>
+              <span className={active ? "text-primary-dark" : "text-primary"}>
                 {item.icon}
               </span>
               {item.label}
@@ -128,21 +123,21 @@ export default function AdminShell({
 
         <Link
           href="/"
-          className="mb-1 flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-ink/70 transition hover:bg-muted"
+          className="mb-1 flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-normal text-ink/80 transition hover:bg-muted hover:text-primary-dark"
         >
-          <Home size={18} className="text-primary" /> Xem trang web
+          <Home size={18} /> Xem trang web
         </Link>
       </nav>
 
       <div className="border-t border-line p-3">
         <div className="mb-2 px-2">
           <p className="truncate text-sm font-bold">{fullName || email}</p>
-          <p className="text-xs text-primary">{ROLE_LABELS[role]}</p>
+          <p className="text-xs text-primary-dark">{ROLE_LABELS[role]}</p>
         </div>
         <form action={signOut}>
           <button
             type="submit"
-            className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50"
+            className="t-danger flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition"
           >
             <LogOut size={18} /> Đăng xuất
           </button>
@@ -165,7 +160,7 @@ export default function AdminShell({
             onClick={() => setOpen(false)}
             className="absolute inset-0 bg-black/45"
           />
-          <aside className="animate-slide-in absolute inset-y-0 left-0 w-72 border-r border-line bg-surface">
+          <aside className="animate-slide-in shadow-modal absolute inset-y-0 left-0 w-72 border-r border-line bg-surface">
             {sidebar}
           </aside>
         </div>
@@ -181,14 +176,14 @@ export default function AdminShell({
           >
             <Menu size={20} />
           </button>
-          <p className="truncate text-sm text-ink/60">
+          <p className="truncate text-sm text-ink/80">
             Quản trị website CBO Sát Cánh
           </p>
           <div className="ml-auto flex items-center gap-2">
             <span className="hidden items-center gap-2 rounded-full bg-muted px-3 py-1.5 text-xs font-bold text-primary-dark sm:inline-flex">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" /> Đang hoạt động
+              <span className="dot-new h-2 w-2 rounded-full" /> Đang hoạt động
             </span>
-            <span className="grid h-9 w-9 place-items-center rounded-full text-xs font-black text-white" style={{ background: "var(--brand-primary)" }}>
+            <span className="grid h-9 w-9 place-items-center rounded-full bg-primary-dark text-xs font-black text-white">
               {(fullName || email).slice(0, 1).toUpperCase()}
             </span>
           </div>

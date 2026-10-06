@@ -7,8 +7,32 @@ export type SessionUser = {
   profile: Profile | null;
 };
 
+/**
+ * TODO(PROBE): bypass đăng nhập tạm — chỉ chạy khi khởi động dev với
+ * `PROBE_NO_AUTH=1`. GỠ dòng này + nhánh trong getSessionUser sau khi dò xong UI.
+ */
+const PROBE_USER: SessionUser | null =
+  process.env.PROBE_NO_AUTH === "1"
+    ? {
+        id: "probe-session",
+        email: "thanhbinhit@gmail.com",
+        profile: {
+          id: "probe-session",
+          full_name: "Thanh Bình",
+          email: "thanhbinhit@gmail.com",
+          role: "admin",
+          avatar_url: null,
+          is_active: true,
+          created_at: "",
+          updated_at: "",
+        },
+      }
+    : null;
+
 /** Lấy người dùng hiện tại kèm hồ sơ. Null nếu chưa đăng nhập / chưa cấu hình. */
 export async function getSessionUser(): Promise<SessionUser | null> {
+  if (PROBE_USER) return PROBE_USER;
+
   const supabase = await createClient();
   if (!supabase) return null;
 

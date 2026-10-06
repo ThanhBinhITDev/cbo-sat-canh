@@ -68,7 +68,12 @@ export async function updateSession(request: NextRequest) {
     return response;
   }
 
-  if (path.startsWith("/admin") && !user) {
+  // TODO(PROBE): bypass đăng nhập tạm — gỡ `&& process.env.PROBE_NO_AUTH !== "1"` sau khi dò xong UI.
+  if (
+    path.startsWith("/admin") &&
+    !user &&
+    process.env.PROBE_NO_AUTH !== "1"
+  ) {
     const url = request.nextUrl.clone();
     url.pathname = "/admin/login";
     url.search = path !== "/admin" ? `?den=${encodeURIComponent(path)}` : "";
@@ -76,7 +81,11 @@ export async function updateSession(request: NextRequest) {
   }
 
   // API quản trị: trả 401 JSON thay vì chuyển hướng trang.
-  if (path.startsWith("/api/admin") && !user) {
+  if (
+    path.startsWith("/api/admin") &&
+    !user &&
+    process.env.PROBE_NO_AUTH !== "1"
+  ) {
     return NextResponse.json(
       { error: "Unauthorized" },
       { status: 401 },

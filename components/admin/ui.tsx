@@ -1,22 +1,24 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { CheckCircle2, AlertTriangle } from "lucide-react";
+import { CheckCircle2, AlertTriangle, Inbox } from "lucide-react";
 
 export function PageHeader({
   title,
   description,
   action,
+  className = "mb-6",
 }: {
   title: string;
   description?: string;
   action?: ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-      <div>
+    <div className={`flex flex-wrap items-start justify-between gap-4 ${className}`}>
+      <div className="min-w-0">
         <h1 className="text-2xl font-extrabold tracking-tight">{title}</h1>
         {description && (
-          <p className="mt-1 max-w-2xl text-sm text-ink/65">{description}</p>
+          <p className="mt-1 max-w-2xl text-sm text-ink/80">{description}</p>
         )}
       </div>
       {action && <div className="flex flex-wrap items-center gap-2">{action}</div>}
@@ -69,7 +71,7 @@ export function PanelHead({
     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4">
       <div>
         <h2 className="text-base font-bold">{title}</h2>
-        {subtitle && <p className="text-xs text-ink/55">{subtitle}</p>}
+        {subtitle && <p className="text-xs text-ink/80">{subtitle}</p>}
       </div>
       {action}
     </div>
@@ -87,8 +89,9 @@ export function EmptyState({
 }) {
   return (
     <div className="px-6 py-14 text-center">
+      <Inbox size={48} className="mx-auto mb-4 text-primary" />
       <p className="text-sm font-bold">{title}</p>
-      <p className="mx-auto mt-1.5 max-w-sm text-sm text-ink/60">{description}</p>
+      <p className="mx-auto mt-1.5 max-w-sm text-sm text-ink/80">{description}</p>
       {action && <div className="mt-5 flex justify-center gap-2">{action}</div>}
     </div>
   );

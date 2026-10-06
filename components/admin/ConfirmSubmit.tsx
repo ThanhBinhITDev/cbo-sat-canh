@@ -27,10 +27,8 @@ export default function ConfirmSubmit({
       onClick={(e) => {
         if (!window.confirm(confirmText)) e.preventDefault();
       }}
-      className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition disabled:opacity-50 ${
-        danger
-          ? "border border-red-200 bg-white text-red-600 hover:bg-red-50"
-          : "border border-line bg-white text-ink/70 hover:border-primary hover:text-primary"
+      className={`inline-flex h-8 items-center gap-1.5 rounded-xl border border-line px-3 text-xs font-bold transition disabled:opacity-50 ${
+        danger ? "t-danger" : "text-ink/80 hover:bg-primary/5 hover:text-primary"
       }`}
     >
       {children}
