@@ -1,0 +1,435 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------ *
+ * Hệ màu nhận diện CBO Sát Cánh
+ * --brand-*  : biến runtime, server ghi đè khi admin đổi màu,
+ *              client ghi đè khi khách tự chỉnh (localStorage)
+ * --color-*  : alias cho Tailwind (qua @theme inline) — luôn đọc --brand-*
+ * ------------------------------------------------------------------ */
+
+:root {
+  --brand-primary: #279cd7;
+  --brand-dark: #1c4592;
+  --brand-ink: #454c56;
+  --brand-surface: #ffffff;
+  --brand-muted: #f5f8fa;
+  --brand-accent: #ffb020;
+  --brand-line: #e3eaf0;
+  --brand-radius: 16px;
+  --brand-font-scale: 1;
+}
+
+@theme inline {
+  --color-primary: var(--brand-primary);
+  --color-primary-dark: var(--brand-dark);
+  --color-ink: var(--brand-ink);
+  --color-surface: var(--brand-surface);
+  --color-muted: var(--brand-muted);
+  --color-accent: var(--brand-accent);
+  --color-line: var(--brand-line);
+
+  --radius-card: var(--brand-radius);
+  --radius-pill: 999px;
+
+  --font-sans:
+    var(--font-be-vietnam), "Be Vietnam Pro", ui-sans-serif, system-ui,
+    -apple-system, "Segoe UI", sans-serif;
+}
+
+/* --- Căn bản --- */
+* {
+  border-color: var(--brand-line);
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 84px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--brand-surface);
+  color: var(--brand-ink);
+  font-family: var(--font-sans);
+  font-size: calc(1rem * var(--brand-font-scale));
+  line-height: 1.6;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--brand-primary) 25%, transparent);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  color: var(--brand-dark);
+  font-weight: 700;
+  line-height: 1.25;
+  text-wrap: balance;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--brand-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* --- Tiện ích dùng lại --- */
+.container-site {
+  width: 100%;
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+}
+
+@media (min-width: 1024px) {
+  .container-site {
+    padding-inline: 2rem;
+  }
+}
+
+.section {
+  padding-block: clamp(3rem, 6vw, 5.5rem);
+}
+
+.section-title {
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.section-kicker {
+  display: inline-block;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--brand-primary);
+  margin-bottom: 0.5rem;
+}
+
+.card {
+  background: var(--brand-surface);
+  border: 1px solid var(--brand-line);
+  border-radius: var(--brand-radius);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--brand-primary) 45%, var(--brand-line));
+  box-shadow: 0 14px 34px -18px rgb(0 0 0 / 0.35);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  border-radius: var(--brand-radius);
+  padding: 0.75rem 1.4rem;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.15s ease,
+    box-shadow 0.2s ease;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn-primary {
+  background: var(--brand-primary);
+  color: #fff;
+  box-shadow: 0 10px 24px -14px color-mix(in srgb, var(--brand-primary) 90%, #000);
+}
+
+.btn-primary:hover {
+  background: var(--brand-dark);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--brand-dark);
+  border: 1.5px solid var(--brand-line);
+}
+
+.btn-ghost:hover {
+  border-color: var(--brand-primary);
+  color: var(--brand-primary);
+}
+
+.btn-accent {
+  background: var(--brand-accent);
+  color: #231a05;
+}
+
+.btn-accent:hover {
+  filter: brightness(1.06);
+}
+
+/* --- Dọc theo lớp nổi --- */
+.prose-post {
+  font-size: 1.0625rem;
+  line-height: 1.8;
+  color: var(--brand-ink);
+}
+
+.prose-post > * + * {
+  margin-top: 1rem;
+}
+
+.prose-post h2 {
+  font-size: 1.5rem;
+  margin-top: 2.25rem;
+}
+
+.prose-post h3 {
+  font-size: 1.25rem;
+  margin-top: 1.75rem;
+}
+
+.prose-post a {
+  color: var(--brand-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.prose-post ul {
+  list-style: disc;
+  padding-left: 1.4rem;
+}
+
+.prose-post ol {
+  list-style: decimal;
+  padding-left: 1.4rem;
+}
+
+.prose-post blockquote {
+  border-left: 4px solid var(--brand-primary);
+  padding-left: 1rem;
+  color: color-mix(in srgb, var(--brand-ink) 80%, #000);
+  font-style: italic;
+}
+
+.prose-post img {
+  border-radius: var(--brand-radius);
+  width: 100%;
+  height: auto;
+}
+
+.prose-post table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.prose-post th,
+.prose-post td {
+  border: 1px solid var(--brand-line);
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+}
+
+.prose-post pre {
+  overflow-x: auto;
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 1rem;
+  border-radius: var(--brand-radius);
+  font-size: 0.9rem;
+}
+
+/* --- Chống nhấp nháy màu khi tải --- */
+html.no-fouc * {
+  transition: none !important;
+}
+
+/* --- Menu mobile --- */
+@keyframes slide-in {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.25s ease-out;
+}
+
+/* ============================ QUẢN TRỊ ============================ */
+.field {
+  display: block;
+}
+
+.field-label,
+.label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--brand-ink);
+  margin-bottom: 0.4rem;
+}
+
+.hint {
+  display: block;
+  font-size: 0.75rem;
+  color: color-mix(in srgb, var(--brand-ink) 60%, transparent);
+  margin-top: 0.3rem;
+}
+
+.input,
+.select,
+.textarea {
+  width: 100%;
+  background: var(--brand-surface);
+  border: 1.5px solid var(--brand-line);
+  border-radius: calc(var(--brand-radius) * 0.7);
+  padding: 0.6rem 0.85rem;
+  font-size: 0.9375rem;
+  font-family: inherit;
+  color: var(--brand-ink);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+  outline: none;
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--brand-primary) 22%, transparent);
+}
+
+.textarea {
+  min-height: 8rem;
+  resize: vertical;
+  line-height: 1.6;
+}
+
+.input::placeholder,
+.textarea::placeholder {
+  color: color-mix(in srgb, var(--brand-ink) 45%, transparent);
+}
+
+.table-admin {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.table-admin thead th {
+  text-align: left;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: color-mix(in srgb, var(--brand-ink) 65%, transparent);
+  padding: 0.75rem 1rem;
+  background: var(--brand-muted);
+  border-bottom: 1px solid var(--brand-line);
+  white-space: nowrap;
+}
+
+.table-admin tbody td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--brand-line);
+  vertical-align: middle;
+}
+
+.table-admin tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table-admin tbody tr {
+  transition: background 0.15s ease;
+}
+
+.table-admin tbody tr:hover {
+  background: color-mix(in srgb, var(--brand-primary) 6%, transparent);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0.22rem 0.6rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.badge-green {
+  background: #dcfce7;
+  color: #15803d;
+}
+.badge-yellow {
+  background: #fef3c7;
+  color: #b45309;
+}
+.badge-blue {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+.badge-gray {
+  background: #e5e7eb;
+  color: #4b5563;
+}
+.badge-red {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.alert-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  border-radius: calc(var(--brand-radius) * 0.7);
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.alert-ok {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+  border-radius: calc(var(--brand-radius) * 0.7);
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
