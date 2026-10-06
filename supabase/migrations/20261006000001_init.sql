@@ -6,7 +6,27 @@
 create extension if not exists pgcrypto;
 
 -- ------------------------------------------------------------
+-- 1. Bảng profiles (1:1 với auth.users)
+-- ------------------------------------------------------------
+
+create table if not exists public.profiles (
+  id          uuid primary key references auth.users (id) on delete cascade,
+  full_name   text not null default '',
+  email       text not null unique,
+  -- mặc định quyền thấp nhất; vai trò thật do admin gán qua
+  -- auth.admin.createUser + upsert (service role), KHÔNG đọc từ client
+  role        text not null default 'collaborator'
+              check (role in ('admin', 'editor', 'collaborator')),
+  avatar_url  text,
+  is_active   boolean not null default true,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+
+-- ------------------------------------------------------------
 -- 0. Hàm kiểm tra vai trò (security definer để tránh đệ quy RLS)
+--    KHÔNG di chuyển lên trước bảng profiles: SQL function được
+--    kiểm tra tham chiếu khi tạo → sẽ lỗi nếu bảng chưa tồn tại.
 -- ------------------------------------------------------------
 
 create or replace function public.app_role()
@@ -64,23 +84,12 @@ as $$
   );
 $$;
 
--- ------------------------------------------------------------
--- 1. Bảng profiles (1:1 với auth.users)
--- ------------------------------------------------------------
-
-create table if not exists public.profiles (
-  id          uuid primary key references auth.users (id) on delete cascade,
-  full_name   text not null default '',
-  email       text not null unique,
-  role        text not null default 'editor'
-              check (role in ('admin', 'editor', 'collaborator')),
-  avatar_url  text,
-  is_active   boolean not null default true,
-  created_at  timestamptz not null default now(),
-  updated_at  timestamptz not null default now()
-);
-
--- Tự tạo hồ sơ khi có user mới (Supabase Auth)
+-- Tự tạo hồ sơ khi có user mới (Supabase Auth).
+-- ⚠ KHÔNG đọc role từ raw_user_meta_data: client tự đặt được metadata khi
+--   gọi /auth/v1/signup → nếu tin thì ai cũng thành admin.
+--   Vai trò thật do admin gán qua auth.admin.createUser + upsert (service role).
+--   is_active=false (fail-closed): tài khoản tự đăng ký không vào được /admin
+--   cho tới khi admin bật trong trang Tài khoản.
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -88,12 +97,12 @@ security definer
 set search_path = ''
 as $$
 begin
-  insert into public.profiles (id, full_name, email, role)
+  insert into public.profiles (id, full_name, email, is_active)
   values (
     new.id,
     coalesce(new.raw_user_meta_data ->> 'full_name', ''),
     coalesce(new.email, ''),
-    coalesce(new.raw_user_meta_data ->> 'role', 'editor')
+    false
   )
   on conflict (id) do nothing;
   return new;

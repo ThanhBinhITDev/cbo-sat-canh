@@ -159,7 +159,8 @@ export async function checkTables(): Promise<string | null> {
   const missing: string[] = [];
 
   for (const table of required) {
-    const { error } = await supabase.from(table).select("id").limit(1);
+    // site_settings dùng PK "key" chứ không có cột id → đừng select("id")
+    const { error } = await supabase.from(table).select("*").limit(1);
     if (error && /does not exist|schema cache|relation/i.test(error.message)) {
       missing.push(table);
     }

@@ -49,13 +49,15 @@ export default function AdminLoginPage() {
 
             <form action={formAction} className="space-y-4">
               <label className="block">
-                <span className="mb-1.5 block text-sm font-semibold">Email</span>
+                <span className="mb-1.5 block text-sm font-semibold">
+                  Email hoặc tên đăng nhập
+                </span>
                 <input
                   name="email"
-                  type="email"
+                  type="text"
                   required
-                  autoComplete="email"
-                  placeholder="ban@email.com"
+                  autoComplete="username"
+                  placeholder="ban@email.com hoặc TenDangNhap"
                   className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-sm outline-none transition focus:border-primary"
                 />
               </label>

@@ -8,11 +8,11 @@ export async function signIn(
   _prev: { error?: string } | null,
   formData: FormData,
 ): Promise<{ error?: string }> {
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const identifier = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
 
-  if (!email || !password) {
-    return { error: "Vui lòng nhập email và mật khẩu." };
+  if (!identifier || !password) {
+    return { error: "Vui lòng nhập email/tên đăng nhập và mật khẩu." };
   }
 
   const supabase = await createClient();
@@ -20,9 +20,20 @@ export async function signIn(
     return { error: "Chưa cấu hình Supabase. Kiểm tra file .env.local." };
   }
 
+  // Chấp nhận cả email lẫn username: không có "@" → tra username → lấy email
+  let email = identifier.toLowerCase();
+  if (!email.includes("@")) {
+    const { data: resolved } = await supabase.rpc("resolve_login_identifier", {
+      p_identifier: identifier,
+    });
+    if (typeof resolved === "string" && resolved.includes("@")) {
+      email = resolved.toLowerCase();
+    }
+  }
+
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
-    return { error: "Email hoặc mật khẩu không đúng." };
+    return { error: "Email/tên đăng nhập hoặc mật khẩu không đúng." };
   }
 
   revalidatePath("/", "layout");

@@ -39,6 +39,8 @@ yarn-error.log*
 !.vscode/extensions.json
 .idea
 
-# opencode — cục bộ trên máy dev, không lên repo
+# agent skills — sinh bởi `opencode` / `npx skills add`, không lên repo
 /.agents/
+/.claude/
+/agent/
 /skills-lock.json

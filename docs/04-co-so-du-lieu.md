@@ -215,8 +215,17 @@ Tài khoản `admin` đầu tiên: Supabase **Authentication → Users → Add u
 (thêm user_metadata `full_name`, mật khẩu ≥ 8 ký tự) rồi ở SQL Editor chạy
 
 ```sql
-update public.profiles set role = 'admin' where email = 'ban@email.com';
+-- trigger tạo profile với is_active=false (fail-closed) nên phải bật kèm
+update public.profiles
+   set role = 'admin', is_active = true
+ where email = 'ban@email.com';
 ```
+
+> ⚠️ **Vô hiệu hoá đăng ký công khai**: Dashboard → *Authentication → Sign In / Up*
+> → bỏ chọn *Allow new users to sign up*. Trigger tạo profile với quyền thấp nhất
+> và `is_active = false` (đăng ký công khai không vào được `/admin`), nhưng nên
+> tắt hẳn để tránh rác dữ liệu. Mọi tài khoản quản trị chỉ sinh ra qua
+> trang **Tài khoản** (`/admin/tai-khoan`) hoặc Dashboard.
 
 - 4 `services`
 - 10 `partners` (chia 3 nhóm, logo đã đổi tên file)

@@ -7,19 +7,19 @@
 -- 1. Dịch vụ (4)
 -- ------------------------------------------------------------
 insert into public.services (id, title, slug, description, icon, color, sort_order, is_active) values
-  ('svc-test-0000-0000-0000-000000000001',
+  ('00000000-0000-0000-0000-000000000001',
    'Xét nghiệm nhanh HIV/STIs', 'xet-nghiem-nhanh-hiv-stis',
    'Xét nghiệm nhanh, bảo mật và miễn phí tại cộng đồng — cho kết quả trong vài phút với sự tư vấn tận tâm.',
    'test-tube', '#279CD7', 1, true),
-  ('svc-prep-0000-0000-0000-000000000002',
+  ('00000000-0000-0000-0000-000000000002',
    'Dự phòng trước phơi nhiễm HIV (PrEP)', 'prep',
    'Tư vấn và cấp thuốc PrEP giúp giảm nguy cơ lây nhiễm HIV, bảo vệ bạn và người thân.',
    'shield-check', '#1C4592', 2, true),
-  ('svc-pep-0000-0000-0000-000000000003',
+  ('00000000-0000-0000-0000-000000000003',
    'Dự phòng sau phơi nhiễm HIV (PEP)', 'pep',
    'Can thiệp khẩn cấp trong vòng 72 giờ sau phơi nhiễm — hãy gọi ngay cho chúng tôi.',
    'clock-alert', '#EF4444', 3, true),
-  ('svc-arv-0000-0000-0000-000000000004',
+  ('00000000-0000-0000-0000-000000000004',
    'Chuyển gửi điều trị HIV (ARV)', 'chuyen-gui-dieu-tri-arv',
    'Kết nối bạn đến cơ sở điều trị ARV uy tín, đồng hành cùng bạn trong suốt lộ trình điều trị.',
    'heart-pulse', '#10B981', 4, true)
@@ -36,16 +36,16 @@ on conflict (id) do update set
 -- 2. Đối tác (10) — logo lấy từ thư mục public/images/partners/
 -- ------------------------------------------------------------
 insert into public.partners (id, name, "group", logo_url, website_url, sort_order, is_active) values
-  ('prt-0000-0000-0000-000000000001', 'Đối tác chiến lược 1', 'strategic', '/images/partners/doi-tac-01.jpg', null, 1, true),
-  ('prt-0000-0000-0000-000000000002', 'Đối tác chiến lược 2', 'strategic', '/images/partners/doi-tac-02.jpg', null, 2, true),
-  ('prt-0000-0000-0000-000000000003', 'Đối tác chiến lược 3', 'strategic', '/images/partners/doi-tac-03.jpg', null, 3, true),
-  ('prt-0000-0000-0000-000000000004', 'Đối tác chiến lược 4', 'strategic', '/images/partners/doi-tac-04.jpg', null, 4, true),
-  ('prt-0000-0000-0000-000000000005', 'Đối tác chiến lược 5', 'strategic', '/images/partners/doi-tac-05.jpg', null, 5, true),
-  ('prt-0000-0000-0000-000000000006', 'Đối tác chiến lược 6', 'strategic', '/images/partners/doi-tac-06.jpg', null, 6, true),
-  ('prt-0000-0000-0000-000000000007', 'Phòng khám Nhà Mình 1', 'clinic', '/images/partners/doi-tac-07.jpg', null, 1, true),
-  ('prt-0000-0000-0000-000000000008', 'Phòng khám Nhà Mình 2', 'clinic', '/images/partners/doi-tac-08.jpg', null, 2, true),
-  ('prt-0000-0000-0000-000000000009', 'Phòng khám Nhà Mình 3', 'clinic', '/images/partners/doi-tac-09.jpg', null, 3, true),
-  ('prt-0000-0000-0000-00000000000a', 'Mạng lưới CBO Đồng bằng Sông Cửu Long', 'network', '/images/partners/doi-tac-10.jpg', null, 1, true)
+  ('00000000-0000-0000-0000-000000000001', 'Đối tác chiến lược 1', 'strategic', '/images/partners/doi-tac-01.jpg', null, 1, true),
+  ('00000000-0000-0000-0000-000000000002', 'Đối tác chiến lược 2', 'strategic', '/images/partners/doi-tac-02.jpg', null, 2, true),
+  ('00000000-0000-0000-0000-000000000003', 'Đối tác chiến lược 3', 'strategic', '/images/partners/doi-tac-03.jpg', null, 3, true),
+  ('00000000-0000-0000-0000-000000000004', 'Đối tác chiến lược 4', 'strategic', '/images/partners/doi-tac-04.jpg', null, 4, true),
+  ('00000000-0000-0000-0000-000000000005', 'Đối tác chiến lược 5', 'strategic', '/images/partners/doi-tac-05.jpg', null, 5, true),
+  ('00000000-0000-0000-0000-000000000006', 'Đối tác chiến lược 6', 'strategic', '/images/partners/doi-tac-06.jpg', null, 6, true),
+  ('00000000-0000-0000-0000-000000000007', 'Phòng khám Nhà Mình 1', 'clinic', '/images/partners/doi-tac-07.jpg', null, 1, true),
+  ('00000000-0000-0000-0000-000000000008', 'Phòng khám Nhà Mình 2', 'clinic', '/images/partners/doi-tac-08.jpg', null, 2, true),
+  ('00000000-0000-0000-0000-000000000009', 'Phòng khám Nhà Mình 3', 'clinic', '/images/partners/doi-tac-09.jpg', null, 3, true),
+  ('00000000-0000-0000-0000-00000000000a', 'Mạng lưới CBO Đồng bằng Sông Cửu Long', 'network', '/images/partners/doi-tac-10.jpg', null, 1, true)
 on conflict (id) do update set
   name = excluded.name,
   "group" = excluded."group",
