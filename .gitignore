@@ -38,3 +38,7 @@ yarn-error.log*
 .vscode/*
 !.vscode/extensions.json
 .idea
+
+# opencode — cục bộ trên máy dev, không lên repo
+/.agents/
+/skills-lock.json
