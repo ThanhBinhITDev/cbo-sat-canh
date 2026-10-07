@@ -70,7 +70,7 @@ export default function Header({ contact }: { contact: ContactInfo }) {
         <div className="ml-auto flex items-center gap-2 lg:ml-0">
           <a
             href={`tel:${hotline.replace(/\D/g, "")}`}
-            className="hidden items-center gap-2 rounded-full bg-primary-dark px-4 py-2.5 text-sm font-bold text-white transition hover:brightness-110 sm:inline-flex"
+            className="hidden items-center gap-2 rounded-full border border-line bg-surface px-4 py-2.5 text-sm font-bold text-primary-dark transition hover:bg-muted sm:inline-flex"
           >
             <Phone size={16} aria-hidden />
             {hotline}
@@ -131,7 +131,7 @@ export default function Header({ contact }: { contact: ContactInfo }) {
             </nav>
 
             <div className="mt-auto space-y-2 border-t border-line p-4">
-              <a href={`tel:${hotline.replace(/\D/g, "")}`} className="btn btn-primary w-full">
+              <a href={`tel:${hotline.replace(/\D/g, "")}`} className="btn btn-ghost w-full border border-line">
                 <Phone size={17} /> Gọi {hotline}
               </a>
               <Link href="/lien-he" onClick={() => setOpen(false)} className="btn btn-ghost w-full">

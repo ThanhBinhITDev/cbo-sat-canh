@@ -33,12 +33,12 @@ export function AboutSection({
                 className="card p-5 text-center"
                 style={{ background: "var(--brand-muted)" }}
               >
-                <p className="text-2xl font-extrabold text-primary-dark">
+                <p className="text-balance break-words text-xl font-extrabold leading-tight text-primary-dark sm:text-2xl">
                   {stat.value}
                 </p>
-                <p className="mt-1 text-sm leading-snug text-ink/65">
-                  {stat.label}
-                </p>
+            <p className="mt-1 text-balance text-xs leading-snug text-ink/65 sm:text-sm">
+              {stat.label}
+            </p>
               </div>
             ))}
           </div>
