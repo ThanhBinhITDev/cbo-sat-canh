@@ -5,6 +5,7 @@ import type {
   Media,
   Newsletter,
   Partner,
+  PartnerGroup,
   Post,
   Profile,
   Service,
@@ -80,6 +81,8 @@ export async function getPostAdmin(id: string) {
 
 export const getServicesAdmin = () => select<Service>("services", { col: "sort_order" });
 export const getPartnersAdmin = () => select<Partner>("partners", { col: "sort_order" });
+export const getPartnerGroupsAdmin = () =>
+  select<PartnerGroup>("partner_groups", { col: "sort_order" });
 export const getTeamAdmin = () => select<TeamMember>("team_members", { col: "sort_order" });
 export const getMediaAdmin = () => select<Media>("media", { col: "created_at", asc: false });
 export const getContactsAdmin = () =>
@@ -155,7 +158,14 @@ export async function checkTables(): Promise<string | null> {
   const supabase = await createClient();
   if (!supabase) return null;
 
-  const required = ["posts", "services", "partners", "team_members", "site_settings"];
+  const required = [
+    "posts",
+    "services",
+    "partners",
+    "partner_groups",
+    "team_members",
+    "site_settings",
+  ];
   const missing: string[] = [];
 
   for (const table of required) {

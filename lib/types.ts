@@ -44,12 +44,19 @@ export type Service = {
   is_active: boolean;
 };
 
-export type PartnerGroup = "strategic" | "clinic" | "network";
+export type PartnerGroup = {
+  key: string;
+  label: string;
+  title: string;
+  subtitle: string | null;
+  sort_order: number;
+  is_active: boolean;
+};
 
 export type Partner = {
   id: string;
   name: string;
-  group: PartnerGroup;
+  group: string;
   logo_url: string | null;
   website_url: string | null;
   sort_order: number;

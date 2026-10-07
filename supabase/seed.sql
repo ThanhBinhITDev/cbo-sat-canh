@@ -33,7 +33,22 @@ on conflict (id) do update set
   is_active = excluded.is_active;
 
 -- ------------------------------------------------------------
--- 2. Đối tác (10) — logo lấy từ thư mục public/images/partners/
+-- 2. Nhóm đối tác (3)
+-- ------------------------------------------------------------
+insert into public.partner_groups (key, label, title, subtitle, sort_order) values
+  ('strategic', 'Đối tác chiến lược', 'Đối tác chiến lược chính',
+   'Nền tảng thành công của CBO SÁT CÁNH', 1),
+  ('clinic', 'Phòng khám', 'Phòng khám Nhà Mình', null, 2),
+  ('network', 'Mạng lưới CBO', 'Mạng lưới CBO Đồng bằng Sông Cửu Long', null, 3)
+on conflict (key) do update set
+  label = excluded.label,
+  title = excluded.title,
+  subtitle = excluded.subtitle,
+  sort_order = excluded.sort_order,
+  is_active = excluded.is_active;
+
+-- ------------------------------------------------------------
+-- 3. Đối tác (10) — logo lấy từ thư mục public/images/partners/
 -- ------------------------------------------------------------
 insert into public.partners (id, name, "group", logo_url, website_url, sort_order, is_active) values
   ('00000000-0000-0000-0000-000000000001', 'Đối tác chiến lược 1', 'strategic', '/images/partners/doi-tac-01.jpg', null, 1, true),
@@ -55,7 +70,7 @@ on conflict (id) do update set
   is_active = excluded.is_active;
 
 -- ------------------------------------------------------------
--- 3. Nội dung tĩnh (site_settings)
+-- 4. Nội dung tĩnh (site_settings)
 --    Khớp với lib/settings.ts — nếu đổi ở đây, cập nhật luôn file TS.
 -- ------------------------------------------------------------
 
@@ -144,7 +159,7 @@ insert into public.site_settings (key, value) values
 on conflict (key) do nothing;
 
 -- ------------------------------------------------------------
--- 4. Bài viết mẫu (3)
+-- 5. Bài viết mẫu (3)
 -- ------------------------------------------------------------
 insert into public.posts
   (slug, title, excerpt, content_md, category, status, is_featured, published_at, meta_title, meta_description)

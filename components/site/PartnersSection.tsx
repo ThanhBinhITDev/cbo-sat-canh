@@ -2,17 +2,13 @@ import Image from "next/image";
 import SectionHeading from "./SectionHeading";
 import type { Partner, PartnerGroup } from "@/lib/types";
 
-const GROUPS: { key: PartnerGroup; title: string; subtitle?: string }[] = [
-  {
-    key: "strategic",
-    title: "Đối tác chiến lược chính",
-    subtitle: "Nền tảng thành công của CBO SÁT CÁNH",
-  },
-  { key: "clinic", title: "Phòng khám Nhà Mình" },
-  { key: "network", title: "Mạng lưới CBO Đồng bằng Sông Cửu Long" },
-];
-
-export default function PartnersSection({ partners }: { partners: Partner[] }) {
+export default function PartnersSection({
+  partners,
+  groups,
+}: {
+  partners: Partner[];
+  groups: PartnerGroup[];
+}) {
   return (
     <section id="doi-tac" className="section bg-surface">
       <div className="container-site">
@@ -23,7 +19,7 @@ export default function PartnersSection({ partners }: { partners: Partner[] }) {
         />
 
         <div className="space-y-8">
-          {GROUPS.map((group) => {
+          {groups.map((group) => {
             const items = partners.filter((p) => p.group === group.key);
             if (!items.length) return null;
 

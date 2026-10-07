@@ -28,12 +28,21 @@ function back(path?: string | null) {
   return raw;
 }
 
-function flash(path: string, message: string, isError = false): never {
-  redirect(`${path}?${isError ? "err" : "flash"}=${encodeURIComponent(message)}`);
+function flash(
+  path: string,
+  message: string,
+  isError = false,
+  params: Record<string, string> = {},
+): never {
+  const q = new URLSearchParams({
+    [isError ? "err" : "flash"]: message,
+    ...params,
+  });
+  redirect(`${path}?${q.toString()}`);
 }
 
-function fail(path: string, message: string): never {
-  flash(path, message, true);
+function fail(path: string, message: string, params?: Record<string, string>): never {
+  flash(path, message, true, params);
 }
 
 /** Bọc lỗi quyền để trang gọi chuyển hướng đúng chỗ. */
@@ -255,12 +264,24 @@ export async function savePartner(formData: FormData) {
     guard(e, "/admin/doi-tac");
   }
 
-  const name = str(formData.get("name"), 200);
-  if (!name) fail("/admin/doi-tac", "Vui lòng nhập tên đối tác.");
+  const group = str(formData.get("group"), 60);
+  const keep = { nhom: group };
 
-  const group = str(formData.get("group"));
-  if (!["strategic", "clinic", "network"].includes(group)) {
-    fail("/admin/doi-tac", "Nhóm đối tác không hợp lệ.");
+  const name = str(formData.get("name"), 200);
+  if (!name) fail("/admin/doi-tac", "Vui lòng nhập tên đối tác.", keep);
+  if (!group) fail("/admin/doi-tac", "Vui lòng chọn nhóm đối tác.", keep);
+
+  // Nhóm phải tồn tại trong partner_groups (bỏ qua nếu bảng chưa có — chưa chạy migration)
+  const supabase = await createClient();
+  if (supabase) {
+    const { data, error } = await supabase
+      .from("partner_groups")
+      .select("key")
+      .eq("key", group)
+      .limit(1);
+    if (!error && (!data || data.length === 0)) {
+      fail("/admin/doi-tac", "Nhóm đối tác không tồn tại. Hãy chọn nhóm khác.", keep);
+    }
   }
 
   const row = {
@@ -274,22 +295,122 @@ export async function savePartner(formData: FormData) {
   };
 
   const err = await write("partners", row, { onConflict: "id" });
-  if (err) fail("/admin/doi-tac", `Không lưu được: ${err}`);
+  if (err) fail("/admin/doi-tac", `Không lưu được: ${err}`, keep);
 
   revalidatePublic();
-  flash("/admin/doi-tac", id ? "Đã cập nhật đối tác." : "Đã thêm đối tác.");
+  flash(
+    "/admin/doi-tac",
+    id ? "Đã cập nhật đối tác." : "Đã thêm đối tác.",
+    false,
+    keep,
+  );
 }
 
 export async function deletePartner(formData: FormData) {
+  const keep = { nhom: str(formData.get("nhom"), 60) };
   try {
     await requireRole(["admin"]);
   } catch (e) {
     guard(e, "/admin/doi-tac");
   }
   const err = await remove("partners", str(formData.get("id")));
-  if (err) fail("/admin/doi-tac", `Không xoá được: ${err}`);
+  if (err) fail("/admin/doi-tac", `Không xoá được: ${err}`, keep);
   revalidatePublic();
-  flash("/admin/doi-tac", "Đã xoá đối tác.");
+  flash("/admin/doi-tac", "Đã xoá đối tác.", false, keep);
+}
+
+export async function savePartnerGroup(formData: FormData) {
+  const path = "/admin/doi-tac";
+  const original = str(formData.get("original"), 60);
+  const keep = { grp: original || "new" };
+
+  try {
+    await requireRole(["admin"]);
+  } catch (e) {
+    guard(e, path);
+  }
+
+  const label = str(formData.get("label"), 100);
+  const title = str(formData.get("title"), 200);
+  if (!label) fail(path, "Vui lòng nhập tên nhóm.", keep);
+  if (!title) fail(path, "Vui lòng nhập tiêu đề hiển thị ở trang khách.", keep);
+
+  // Khóa kỹ thuật: tự sinh khi thêm, giữ nguyên khi sửa (đối tác đang gắn khóa cũ)
+  const key = original || slugify(label).slice(0, 60);
+  if (!key) {
+    fail(path, "Không tạo được khóa nhóm từ tên. Hãy dùng tên có chữ cái.", {
+      grp: "new",
+    });
+  }
+
+  const row = {
+    label,
+    title,
+    subtitle: str(formData.get("subtitle"), 200) || null,
+    sort_order: num(formData.get("sort_order"), 0),
+    is_active: bool(formData.get("is_active")),
+  };
+
+  const supabase = await createClient();
+  if (!supabase) fail(path, "Chưa cấu hình Supabase (thiếu .env.local).", keep);
+
+  const { error } = original
+    ? await supabase.from("partner_groups").update(row).eq("key", original)
+    : await supabase.from("partner_groups").insert({ key, ...row });
+
+  if (error) {
+    fail(
+      path,
+      error.code === "23505"
+        ? "Tên nhóm đã tồn tại (khóa trùng). Hãy đổi tên nhóm khác."
+        : `Không lưu được: ${error.message}`,
+      keep,
+    );
+  }
+
+  revalidatePublic();
+  flash(
+    path,
+    original ? "Đã cập nhật nhóm đối tác." : "Đã thêm nhóm đối tác.",
+    false,
+    { nhom: key },
+  );
+}
+
+export async function deletePartnerGroup(formData: FormData) {
+  const path = "/admin/doi-tac";
+  try {
+    await requireRole(["admin"]);
+  } catch (e) {
+    guard(e, path);
+  }
+
+  const key = str(formData.get("key"), 60);
+  if (!key) fail(path, "Thiếu khóa nhóm.");
+
+  const supabase = await createClient();
+  if (!supabase) fail(path, "Chưa cấu hình Supabase (thiếu .env.local).");
+
+  const { count, error: countErr } = await supabase
+    .from("partners")
+    .select("id", { count: "exact", head: true })
+    .eq("group", key);
+  if (countErr) {
+    fail(path, `Không kiểm tra được nhóm: ${countErr.message}`, { nhom: key });
+  }
+  if (count) {
+    fail(
+      path,
+      `Nhóm này còn ${count} đối tác. Hãy chuyển đối tác sang nhóm khác trước khi xoá.`,
+      { nhom: key },
+    );
+  }
+
+  const { error } = await supabase.from("partner_groups").delete().eq("key", key);
+  if (error) fail(path, `Không xoá được: ${error.message}`, { nhom: key });
+
+  revalidatePublic();
+  flash(path, "Đã xoá nhóm đối tác.");
 }
 
 export async function saveTeamMember(formData: FormData) {

@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import type { Partner, Post, Service, TeamMember } from "@/lib/types";
+import type { Partner, PartnerGroup, Post, Service, TeamMember } from "@/lib/types";
 
 /* ------------------------------------------------------------------ *
  * Dữ liệu mặc định khi chưa kết nối Supabase.
@@ -73,6 +73,33 @@ export const DEFAULT_PARTNERS: Partner[] = [
   },
 ];
 
+export const DEFAULT_PARTNER_GROUPS: PartnerGroup[] = [
+  {
+    key: "strategic",
+    label: "Đối tác chiến lược",
+    title: "Đối tác chiến lược chính",
+    subtitle: "Nền tảng thành công của CBO SÁT CÁNH",
+    sort_order: 1,
+    is_active: true,
+  },
+  {
+    key: "clinic",
+    label: "Phòng khám",
+    title: "Phòng khám Nhà Mình",
+    subtitle: null,
+    sort_order: 2,
+    is_active: true,
+  },
+  {
+    key: "network",
+    label: "Mạng lưới CBO",
+    title: "Mạng lưới CBO Đồng bằng Sông Cửu Long",
+    subtitle: null,
+    sort_order: 3,
+    is_active: true,
+  },
+];
+
 /* ------------------------------------------------------------------ */
 
 export async function getServices(): Promise<Service[]> {
@@ -99,6 +126,22 @@ export async function getPartners(): Promise<Partner[]> {
     .order("sort_order");
 
   return (data as Partner[])?.length ? (data as Partner[]) : DEFAULT_PARTNERS;
+}
+
+export async function getPartnerGroups(): Promise<PartnerGroup[]> {
+  const supabase = await createClient();
+  // Lỗi (chưa migration / chưa cấu hình) → dùng nhóm mặc định;
+  // mảng rỗng (admin ẩn hết nhóm) → trả về rỗng, không dùng fallback.
+  if (!supabase) return DEFAULT_PARTNER_GROUPS;
+
+  const { data, error } = await supabase
+    .from("partner_groups")
+    .select("*")
+    .eq("is_active", true)
+    .order("sort_order");
+
+  if (error) return DEFAULT_PARTNER_GROUPS;
+  return (data ?? []) as PartnerGroup[];
 }
 
 export async function getTeamMembers(): Promise<TeamMember[]> {

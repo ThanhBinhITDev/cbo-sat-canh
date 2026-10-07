@@ -13,6 +13,7 @@ import ThemeSwitcher from "@/components/site/ThemeSwitcher";
 import ContactFormSection from "@/components/site/ContactFormSection";
 import { getContent } from "@/lib/settings";
 import {
+  getPartnerGroups,
   getPartners,
   getPosts,
   getServices,
@@ -22,13 +23,15 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [content, services, partners, members, featured] = await Promise.all([
-    getContent(),
-    getServices(),
-    getPartners(),
-    getTeamMembers(),
-    getPosts({ featured: true, limit: 3 }),
-  ]);
+  const [content, services, partnerGroups, partners, members, featured] =
+    await Promise.all([
+      getContent(),
+      getServices(),
+      getPartnerGroups(),
+      getPartners(),
+      getTeamMembers(),
+      getPosts({ featured: true, limit: 3 }),
+    ]);
 
   const posts = featured.length ? featured : await getPosts({ limit: 3 });
 
@@ -45,7 +48,7 @@ export default async function HomePage() {
         />
         <ServicesSection services={services} />
         <FeaturedPosts posts={posts} />
-        <PartnersSection partners={partners} />
+        <PartnersSection partners={partners} groups={partnerGroups} />
         <TeamSection members={members} />
         <ContactFormSection contact={content.contact} />
         <MapContactSection contact={content.contact} map={content.map} />

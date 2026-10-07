@@ -11,7 +11,8 @@ posts.author_id ────────┤
                         │
 site_settings   (độc lập, key/value)
 services        (độc lập)
-partners        (độc lập)
+partner_groups  (độc lập)
+partners        (độc lập, group → partner_groups.key)
 team_members    (độc lập)
 media           (độc lập)
 contact_messages (độc lập, có staff_id → profiles)
@@ -72,20 +73,34 @@ Index: `(status, published_at DESC)`, `(category)`, GIN full-text trên `title +
 
 4 bản ghi mặc định: Xét nghiệm nhanh HIV/STIs · PrEP · PEP · Chuyển gửi điều trị ARV.
 
+### `partner_groups` — nhóm đối tác
+
+| Cột | Kiểu | Ràng buộc |
+|---|---|---|
+| `key` | text | PK (khóa kỹ thuật, tự sinh từ tên khi thêm; không đổi khi sửa) |
+| `label` | text | NOT NULL — tên hiển thị ở tab trang quản trị |
+| `title` | text | NOT NULL — tiêu đề hiển thị ở trang khách |
+| `subtitle` | text | dòng phụ bên cạnh tiêu đề (tuỳ chọn) |
+| `sort_order` | int | DEFAULT 0 |
+| `is_active` | boolean | DEFAULT true — ẩn trên trang khách khi false |
+
+Seed 3 nhóm: `strategic` · `clinic` · `network`. Admin thêm/sửa/xoá ở `/admin/doi-tac`
+(nhóm còn đối tác thì không xoá được).
+
 ### `partners` — đối tác
 
 | Cột | Kiểu | Ràng buộc |
 |---|---|---|
 | `id` | uuid | PK |
 | `name` | text | NOT NULL |
-| `group` | text | CHECK IN (`strategic`, `clinic`, `network`) |
+| `group` | text | DEFAULT `strategic` — tham chiếu `partner_groups.key` (app kiểm tra khi lưu) |
 | `logo_url` | text | |
 | `website_url` | text | |
 | `sort_order` | int | DEFAULT 0 |
 | `is_active` | boolean | DEFAULT true |
 
-Nhóm: `strategic` = ĐỐI TÁC CHIẾN LƯỢC CHÍNH (6), `clinic` = PHÒNG KHÁM NHÀ MÌNH (3),
-`network` = MẠNG LƯỚI CBO ĐỒNG BẰNG SÔNG CỬU LONG (1).
+Nhóm do admin quản lý trong `partner_groups`; dữ liệu mẫu: `strategic` (6),
+`clinic` (3), `network` (1).
 
 ### `team_members` — đội ngũ
 
@@ -195,6 +210,7 @@ Bucket Storage: `site-assets` (công khai đọc, ghi chỉ cho người đã đ
 | `profiles` | bản thân mình / admin | trigger tạo user | admin | admin |
 | `posts` | `published` (ai cũng đọc) | admin, editor | admin, editor | admin |
 | `services` | `is_active` | admin | admin | admin |
+| `partner_groups` | `is_active` | admin | admin | admin |
 | `partners` | `is_active` | admin | admin | admin |
 | `team_members` | `is_active` | admin | admin | admin |
 | `site_settings` | ai cũng đọc | admin | admin | admin |
@@ -209,7 +225,9 @@ Chi tiết ở [10-phan-quyen-va-bao-mat.md](./10-phan-quyen-va-bao-mat.md).
 Chạy một lần sau khi tạo database — mở Supabase **SQL Editor** (hoặc MCP Supabase) và chạy theo thứ tự:
 
 1. `supabase/migrations/20261006000001_init.sql` — schema, trigger, RLS, storage bucket
-2. `supabase/seed.sql` — 4 dịch vụ, 10 đối tác, nội dung tĩnh, 3 bài viết mẫu
+2. `supabase/migrations/20261006010000_username-login.sql` — đăng nhập bằng username
+3. `supabase/migrations/20261008000000_partner_groups.sql` — bảng `partner_groups`, bỏ CHECK cố định trên `partners.group`
+4. `supabase/seed.sql` — 4 dịch vụ, 3 nhóm đối tác, 10 đối tác, nội dung tĩnh, 3 bài viết mẫu
 
 Tài khoản `admin` đầu tiên: Supabase **Authentication → Users → Add user**
 (thêm user_metadata `full_name`, mật khẩu ≥ 8 ký tự) rồi ở SQL Editor chạy
@@ -228,6 +246,7 @@ update public.profiles
 > trang **Tài khoản** (`/admin/tai-khoan`) hoặc Dashboard.
 
 - 4 `services`
+- 3 `partner_groups` (strategic / clinic / network)
 - 10 `partners` (chia 3 nhóm, logo đã đổi tên file)
 - Nội dung `site_settings`: giới thiệu, tầm nhìn, sứ mệnh, giá trị, liên hệ, theme mặc định
 - 1 tài khoản `admin` đầu tiên (tạo qua Supabase Dashboard hoặc seed có tham số email)
