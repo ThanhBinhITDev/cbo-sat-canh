@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Be_Vietnam_Pro } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { getSettings } from "@/lib/settings";
 import { normalizeTheme, themeToStyle } from "@/lib/theme";
@@ -65,7 +66,11 @@ export default async function RootLayout({
       data-scroll-behavior="smooth"
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
+        <Script
+          id="theme-boot"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: themeBootScript }}
+        />
       </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
