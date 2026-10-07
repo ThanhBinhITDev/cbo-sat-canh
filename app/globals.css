@@ -295,7 +295,7 @@ html.no-fouc * {
 .hint {
   display: block;
   font-size: 0.75rem;
-  color: color-mix(in srgb, var(--brand-ink) 60%, transparent);
+  color: color-mix(in srgb, var(--brand-ink) 80%, transparent);
   margin-top: 0.3rem;
 }
 

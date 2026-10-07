@@ -3,23 +3,10 @@
 import { useState, type ReactNode } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { saveContentSection } from "@/lib/admin/actions";
-import { Field, Panel, PanelHead } from "./ui";
+import { Field, PanelHead } from "./ui";
+import { SECTIONS, sectionProgress, type SectionKey } from "./content-sections";
 
 type Json = Record<string, unknown>;
-
-export const SECTIONS = [
-  { key: "hero", label: "Banner trang chủ" },
-  { key: "about", label: "Giới thiệu" },
-  { key: "vision", label: "Tầm nhìn" },
-  { key: "mission", label: "Sứ mệnh" },
-  { key: "values", label: "Giá trị cốt lõi" },
-  { key: "contact", label: "Liên hệ" },
-  { key: "map", label: "Bản đồ" },
-  { key: "footer", label: "Footer" },
-  { key: "seo", label: "SEO" },
-] as const;
-
-export type SectionKey = (typeof SECTIONS)[number]["key"];
 
 type Props = { section: SectionKey; initial: Json };
 
@@ -34,27 +21,39 @@ export default function ContentEditor({ section, initial }: Props) {
     setData((prev) => ({ ...prev, [key]: value }));
 
   const title = SECTIONS.find((s) => s.key === section)?.label ?? section;
+  const progress = sectionProgress(initial);
 
   return (
-    <Panel>
+    <div className="card">
       <PanelHead
         title={title}
-        subtitle="Thay đổi tại đây áp dụng cho toàn bộ trang khách sau khi lưu."
+        action={
+          <span className="badge badge-gray">
+            {progress.total > 0
+              ? `${progress.filled}/${progress.total} trường`
+              : "Chưa điền"}
+          </span>
+        }
       />
 
-      <form action={saveContentSection} className="space-y-5 p-5">
+      <form action={saveContentSection} className="flex flex-col">
         <input type="hidden" name="section" value={section} />
         <input type="hidden" name="payload" value={JSON.stringify(data)} />
 
-        <Fields section={section} data={data} set={set} />
+        <div className="space-y-5 p-5">
+          <Fields section={section} data={data} set={set} />
+        </div>
 
-        <div className="flex items-center gap-3 border-t border-line pt-4">
+        <div className="sticky bottom-0 flex flex-wrap items-center justify-between gap-3 rounded-b-2xl border-t border-line bg-surface px-5 py-4">
+          <p className="text-xs text-ink/80">
+            Thay đổi áp dụng cho trang khách sau khi lưu.
+          </p>
           <button type="submit" className="btn btn-primary py-2.5 text-sm">
             Lưu thay đổi
           </button>
         </div>
       </form>
-    </Panel>
+    </div>
   );
 }
 
@@ -146,7 +145,7 @@ function Fields({
                 </div>
               ))}
               {asArray(data.stats).length === 0 && (
-                <p className="text-sm text-ink/55">Chưa có số liệu nào.</p>
+                <p className="text-sm text-ink/80">Chưa có số liệu nào.</p>
               )}
               <button
                 type="button"
@@ -219,7 +218,7 @@ function Fields({
             </div>
           ))}
           {asArray(data.values).length === 0 && (
-            <p className="text-sm text-ink/55">Chưa có giá trị nào.</p>
+            <p className="text-sm text-ink/80">Chưa có giá trị nào.</p>
           )}
           <button
             type="button"
@@ -342,7 +341,7 @@ function ListField({
   return (
     <div className="space-y-3">
       <p className="label">{label}</p>
-      {items.length === 0 && <p className="text-sm text-ink/55">{emptyHint}</p>}
+      {items.length === 0 && <p className="text-sm text-ink/80">{emptyHint}</p>}
       {items.map((item, i) => (
         <div key={i} className="flex gap-2">
           <textarea

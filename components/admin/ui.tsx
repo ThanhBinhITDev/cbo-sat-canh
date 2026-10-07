@@ -123,7 +123,7 @@ export function Field({
     <label className="field">
       <span className="field-label">
         {label}
-        {required && <span className="text-red-500"> *</span>}
+        {required && <span className="text-red-600"> *</span>}
       </span>
       {children}
       {hint && <span className="hint">{hint}</span>}
