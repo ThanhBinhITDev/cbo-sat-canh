@@ -91,15 +91,14 @@ export default function Header({ contact }: { contact: ContactInfo }) {
       </div>
 
       {open && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <button
-            type="button"
-            aria-label="Đóng menu"
+        <>
+          <div
+            aria-hidden
             onClick={() => setOpen(false)}
-            className="absolute inset-0 bg-black/45"
+            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-[1px] lg:hidden"
           />
-          <div className="animate-slide-in absolute left-0 top-0 flex h-full w-[82%] max-w-xs flex-col bg-surface shadow-2xl">
-            <div className="flex h-[72px] items-center justify-between border-b border-line px-5">
+          <div className="fixed left-0 top-0 z-50 flex h-dvh w-[86%] max-w-sm flex-col bg-surface shadow-2xl lg:hidden">
+            <div className="flex h-[72px] shrink-0 items-center justify-between border-b border-line px-5">
               <Image
                 src="/images/brand/logo-cau.png"
                 alt="Logo CBO Sát Cánh"
@@ -117,29 +116,29 @@ export default function Header({ contact }: { contact: ContactInfo }) {
               </button>
             </div>
 
-            <nav className="flex flex-col overflow-y-auto p-3">
+            <nav className="flex-1 overflow-y-auto overflow-x-hidden p-2.5">
               {NAV.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
                   onClick={() => setOpen(false)}
-                  className="rounded-xl px-4 py-3 text-[1.02rem] font-medium text-ink hover:bg-muted hover:text-primary-dark"
+                  className="block w-full break-words rounded-xl px-4 py-2.5 text-base font-medium text-ink transition hover:bg-muted hover:text-primary-dark"
                 >
                   {item.label}
                 </Link>
               ))}
             </nav>
 
-            <div className="mt-auto space-y-2 border-t border-line p-4">
+            <div className="shrink-0 space-y-2 border-t border-line p-4">
               <a href={`tel:${hotline.replace(/\D/g, "")}`} className="btn btn-ghost w-full border border-line">
-                <Phone size={17} /> Gọi {hotline}
+                <Phone size={17} /> <span className="truncate">Gọi {hotline}</span>
               </a>
               <Link href="/lien-he" onClick={() => setOpen(false)} className="btn btn-ghost w-full">
                 Nhắn tin hỏi thêm
               </Link>
             </div>
           </div>
-        </div>
+        </>
       )}
     </header>
   );
