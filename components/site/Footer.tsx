@@ -44,7 +44,7 @@ export default function Footer({ contact, slogan, copyright, address }: Props) {
         </div>
 
         <nav aria-label="Liên kết nhanh">
-          <h2 className="mb-4 text-base font-bold">Liên kết nhanh</h2>
+          <h2 className="mb-4 text-base font-bold text-white">Liên kết nhanh</h2>
           <ul className="space-y-2.5 text-sm text-white/75">
             {QUICK_LINKS.map((l) => (
               <li key={l.href}>
@@ -57,7 +57,7 @@ export default function Footer({ contact, slogan, copyright, address }: Props) {
         </nav>
 
         <div>
-          <h2 className="mb-4 text-base font-bold">Dịch vụ</h2>
+          <h2 className="mb-4 text-base font-bold text-white">Dịch vụ</h2>
           <ul className="space-y-2.5 text-sm text-white/75">
             {SERVICES.map((s) => (
               <li key={s}>
@@ -70,7 +70,7 @@ export default function Footer({ contact, slogan, copyright, address }: Props) {
         </div>
 
         <div>
-          <h2 className="mb-4 text-base font-bold">Liên hệ</h2>
+          <h2 className="mb-4 text-base font-bold text-white">Liên hệ</h2>
           <ul className="space-y-3 text-sm text-white/75">
             <li className="flex gap-2.5">
               <Phone size={16} className="mt-0.5 shrink-0 text-white/60" />

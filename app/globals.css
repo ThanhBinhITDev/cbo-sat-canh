@@ -48,36 +48,40 @@
   }
 }
 
-html {
-  scroll-padding-top: 84px;
-  -webkit-text-size-adjust: 100%;
-}
+/* Base nằm trong @layer để utility Tailwind (text-white, text-ink...)
+ * luôn thắng — viết ngoài layer sẽ nuốt màu chữ của <a>, <h1>-<h4>. */
+@layer base {
+  html {
+    scroll-padding-top: 84px;
+    -webkit-text-size-adjust: 100%;
+  }
 
-body {
-  background: var(--brand-surface);
-  color: var(--brand-ink);
-  font-family: var(--font-sans);
-  font-size: calc(1rem * var(--brand-font-scale));
-  line-height: 1.6;
-}
+  body {
+    background: var(--brand-surface);
+    color: var(--brand-ink);
+    font-family: var(--font-sans);
+    font-size: calc(1rem * var(--brand-font-scale));
+    line-height: 1.6;
+  }
 
-::selection {
-  background: color-mix(in srgb, var(--brand-primary) 25%, transparent);
-}
+  ::selection {
+    background: color-mix(in srgb, var(--brand-primary) 25%, transparent);
+  }
 
-h1,
-h2,
-h3,
-h4 {
-  color: var(--brand-dark);
-  font-weight: 700;
-  line-height: 1.25;
-  text-wrap: balance;
-}
+  h1,
+  h2,
+  h3,
+  h4 {
+    color: var(--brand-dark);
+    font-weight: 700;
+    line-height: 1.25;
+    text-wrap: balance;
+  }
 
-a {
-  color: inherit;
-  text-decoration: none;
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
 }
 
 /* Locked #16: không vẽ vòng focus ở nút, link, tab, chip, card, dòng. */
