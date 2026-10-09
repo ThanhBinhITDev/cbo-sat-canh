@@ -9,6 +9,8 @@ import {
   Stethoscope,
   Images,
   UserCog,
+  Database,
+  HardDrive,
 } from "lucide-react";
 import { Flash, PageHeader, Panel, PanelHead, EmptyState } from "@/components/admin/ui";
 import { ErrorState } from "@/components/admin/States";
@@ -19,9 +21,17 @@ import {
   getLatestMessages,
   getLinkCounts,
   getMessagesPerDay,
+  getSupabaseUsage,
+  type SupabaseUsage,
+  type AdminValue,
 } from "@/lib/admin/data";
+import {
+  FREE_DB_QUOTA,
+  FREE_STORAGE_QUOTA,
+  QUOTA_WARN_PCT,
+} from "@/lib/admin/quota";
 import { SERVICE_OPTIONS } from "@/lib/types";
-import { formatTime } from "@/lib/format";
+import { formatTime, formatBytes } from "@/lib/format";
 
 const SERVICE_LABELS = Object.fromEntries(
   SERVICE_OPTIONS.map((o) => [o.value, o.label]),
@@ -37,13 +47,15 @@ export default async function AdminDashboard({
   searchParams,
 }: PageProps<"/admin">) {
   const sp = await searchParams;
-  const [stats, latest, tableWarning, perDay, linkCounts] = await Promise.all([
-    getDashboardStats(),
-    getLatestMessages(5),
-    checkTables(),
-    getMessagesPerDay(),
-    getLinkCounts(),
-  ]);
+  const [stats, latest, tableWarning, perDay, linkCounts, usage] =
+    await Promise.all([
+      getDashboardStats(),
+      getLatestMessages(5),
+      checkTables(),
+      getMessagesPerDay(),
+      getLinkCounts(),
+      getSupabaseUsage(),
+    ]);
 
   return (
     <div className="grid gap-4">
@@ -111,6 +123,8 @@ export default async function AdminDashboard({
             </div>
             <LinksCard counts={linkCounts.ok ? linkCounts.value : null} />
           </div>
+
+          <UsagePanel usage={usage} />
 
           <div>
             <Panel>
@@ -368,4 +382,130 @@ function StatusBadge({ status }: { status: string }) {
   };
   const item = map[status] ?? { cls: "badge-gray", label: status };
   return <span className={`badge ${item.cls}`}>{item.label}</span>;
+}
+
+/** Thẻ dung lượng Supabase — chỉ hiện với admin (RPC tự chặn vai trò khác). */
+function UsagePanel({
+  usage,
+}: {
+  usage: AdminValue<SupabaseUsage> | null;
+}) {
+  if (usage === null) return null;
+
+  if (!usage.ok) {
+    return (
+      <div>
+        <Panel>
+          <PanelHead
+            title="Dung lượng Supabase"
+            subtitle="Không tải được số liệu"
+          />
+          <div className="p-5">
+            <p className="alert-error" role="alert">
+              {usage.message}
+              {usage.detail ? ` (${usage.detail})` : ""}
+            </p>
+          </div>
+        </Panel>
+      </div>
+    );
+  }
+
+  const { databaseBytes, storageBytes, fileCount, tables } = usage.value;
+
+  return (
+    <div>
+      <Panel>
+        <PanelHead
+          title="Dung lượng Supabase"
+          subtitle="Gói Free · tải lại trang để cập nhật"
+        />
+        <div className="grid gap-6 p-5 sm:grid-cols-2">
+          <UsageBar
+            icon={<Database size={15} />}
+            label="Cơ sở dữ liệu"
+            used={databaseBytes}
+            quota={FREE_DB_QUOTA}
+            hint={
+              tables.length
+                ? `Bảng lớn nhất: ${tables
+                    .map((t) => `${t.name} · ${formatBytes(t.bytes)}`)
+                    .join(" · ")}`
+                : undefined
+            }
+          />
+          <UsageBar
+            icon={<HardDrive size={15} />}
+            label="File Storage"
+            used={storageBytes}
+            quota={FREE_STORAGE_QUOTA}
+            hint={fileCount === 0 ? "Chưa có tệp nào" : `${fileCount} tệp`}
+          />
+        </div>
+        <p className="border-t border-line px-5 py-3 text-xs text-ink/80">
+          Gói Free chuyển read-only khi Database vượt 500 MB. Lưu lượng mạng
+          (egress) xem ở Supabase Dashboard → Usage.
+        </p>
+      </Panel>
+    </div>
+  );
+}
+
+function UsageBar({
+  icon,
+  label,
+  used,
+  quota,
+  hint,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  used: number;
+  quota: number;
+  hint?: string;
+}) {
+  const pct = Math.min(100, (used / quota) * 100);
+  const danger = pct >= QUOTA_WARN_PCT;
+
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-3">
+        <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-ink/80">
+          <span className="text-primary">{icon}</span>
+          {label}
+        </span>
+        <span
+          className={`text-sm font-extrabold ${danger ? "text-red-600" : "text-primary-dark"}`}
+        >
+          {formatBytes(used)}{" "}
+          <span className="font-bold text-ink/80">/ {formatBytes(quota)}</span>
+        </span>
+      </div>
+      <div
+        className="mt-2 h-2.5 overflow-hidden rounded-full bg-primary/10"
+        role="progressbar"
+        aria-valuenow={Math.round(pct)}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={label}
+      >
+        <div
+          className={`h-full rounded-full transition-all ${danger ? "bg-red-500" : "bg-primary"}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <div className="mt-1.5 flex items-start justify-between gap-3 text-xs">
+        <span
+          className={`shrink-0 ${danger ? "font-bold text-red-600" : "text-ink/80"}`}
+        >
+          {pct.toLocaleString("vi-VN", { maximumFractionDigits: 1 })}%
+        </span>
+        {hint && (
+          <span className="min-w-0 truncate text-right text-ink/80">
+            {hint}
+          </span>
+        )}
+      </div>
+    </div>
+  );
 }

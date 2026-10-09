@@ -430,6 +430,19 @@ html.no-fouc * {
   font-weight: 600;
 }
 
+.alert-warn {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  background: #fffbeb;
+  color: #92400e;
+  border: 1px solid #fde68a;
+  border-radius: calc(var(--brand-radius) * 0.7);
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
 /* --- Bảng dữ liệu: cuộn ngang, cột dính, đổi sang danh sách trên mobile --- */
 .tbl-scroll {
   overflow-x: auto;

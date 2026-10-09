@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireRole, AuthError } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { getQuotaStatus } from "@/lib/admin/data";
+import { quotaState, quotaLockMessage } from "@/lib/admin/quota";
 import { invalidateSettingsCache } from "@/lib/settings";
 import { slugify } from "@/lib/slug";
 import { normalizeTheme, type Theme } from "@/lib/theme";
@@ -105,6 +107,18 @@ function revalidatePublic() {
   revalidatePath("/", "layout");
 }
 
+/**
+ * Chặn mọi lệnh ghi khi đã chạm hạn mức (Database ≥500 MB hoặc Storage ≥1 GB).
+ * Không kiểm tra được (lỗi RPC) thì cho qua — nền tảng Supabase vẫn tự
+ * read-only ở đúng hạn nên đây chỉ là lớp thông báo thân thiện hơn.
+ */
+async function assertWritable(path: string): Promise<void> {
+  const status = await getQuotaStatus();
+  if (!status?.ok) return;
+  const state = quotaState(status.value);
+  if (state.locked) fail(path, quotaLockMessage(state));
+}
+
 /* ------------------------------------------------------------------ *
  * Bài viết
  * ------------------------------------------------------------------ */
@@ -118,6 +132,7 @@ export async function savePost(
   const path = id ? listPath : "/admin/bai-viet/moi";
 
   const user = await requireRole(["admin", "editor"]).catch((e) => guard(e, path));
+  await assertWritable(path);
   if (!user.profile) return { ok: false, message: "Bạn không có quyền thực hiện thao tác này." };
 
   const supabase = await createClient();
@@ -203,6 +218,7 @@ export async function deletePost(formData: FormData) {
   } catch (e) {
     guard(e, backPath);
   }
+  await assertWritable(backPath);
 
   const err = await remove("posts", id);
   if (err) fail(backPath, `Không xoá được: ${err}`);
@@ -222,6 +238,7 @@ export async function saveService(formData: FormData) {
   } catch (e) {
     guard(e, "/admin/dich-vu");
   }
+  await assertWritable("/admin/dich-vu");
 
   const title = str(formData.get("title"), 300);
   if (!title) fail("/admin/dich-vu", "Vui lòng nhập tên dịch vụ.");
@@ -250,6 +267,7 @@ export async function deleteService(formData: FormData) {
   } catch (e) {
     guard(e, "/admin/dich-vu");
   }
+  await assertWritable("/admin/dich-vu");
   const err = await remove("services", str(formData.get("id")));
   if (err) fail("/admin/dich-vu", `Không xoá được: ${err}`);
   revalidatePublic();
@@ -263,6 +281,7 @@ export async function savePartner(formData: FormData) {
   } catch (e) {
     guard(e, "/admin/doi-tac");
   }
+  await assertWritable("/admin/doi-tac");
 
   const group = str(formData.get("group"), 60);
   const keep = { nhom: group };
@@ -313,6 +332,7 @@ export async function deletePartner(formData: FormData) {
   } catch (e) {
     guard(e, "/admin/doi-tac");
   }
+  await assertWritable("/admin/doi-tac");
   const err = await remove("partners", str(formData.get("id")));
   if (err) fail("/admin/doi-tac", `Không xoá được: ${err}`, keep);
   revalidatePublic();
@@ -329,6 +349,7 @@ export async function savePartnerGroup(formData: FormData) {
   } catch (e) {
     guard(e, path);
   }
+  await assertWritable(path);
 
   const label = str(formData.get("label"), 100);
   const title = str(formData.get("title"), 200);
@@ -384,6 +405,7 @@ export async function deletePartnerGroup(formData: FormData) {
   } catch (e) {
     guard(e, path);
   }
+  await assertWritable(path);
 
   const key = str(formData.get("key"), 60);
   if (!key) fail(path, "Thiếu khóa nhóm.");
@@ -420,6 +442,7 @@ export async function saveTeamMember(formData: FormData) {
   } catch (e) {
     guard(e, "/admin/doi-ngu");
   }
+  await assertWritable("/admin/doi-ngu");
 
   const full_name = str(formData.get("full_name"), 150);
   if (!full_name) fail("/admin/doi-ngu", "Vui lòng nhập họ tên.");
@@ -447,6 +470,7 @@ export async function deleteTeamMember(formData: FormData) {
   } catch (e) {
     guard(e, "/admin/doi-ngu");
   }
+  await assertWritable("/admin/doi-ngu");
   const err = await remove("team_members", str(formData.get("id")));
   if (err) fail("/admin/doi-ngu", `Không xoá được: ${err}`);
   revalidatePublic();
@@ -482,6 +506,7 @@ export async function saveContentSection(formData: FormData) {
   } catch (e) {
     guard(e, "/admin/noi-dung");
   }
+  await assertWritable("/admin/noi-dung");
 
   const section = str(formData.get("section"));
   const payload = str(formData.get("payload"));
@@ -499,6 +524,7 @@ export async function saveTheme(formData: FormData) {
   } catch (e) {
     guard(e, "/admin/giao-dien");
   }
+  await assertWritable("/admin/giao-dien");
 
   const draft = {
     primary: str(formData.get("primary")),
@@ -524,6 +550,7 @@ export async function saveMediaMeta(formData: FormData) {
   const id = str(formData.get("id"));
   const path = str(formData.get("back")) || "/admin/anh";
   const user = await requireRole(["admin", "editor"]).catch((e) => guard(e, path));
+  await assertWritable(path);
 
   const isAdmin = user.profile?.role === "admin";
   const alt = str(formData.get("alt"), 300);
@@ -548,6 +575,7 @@ export async function deleteMedia(formData: FormData) {
   } catch (e) {
     guard(e, backPath);
   }
+  await assertWritable(backPath);
 
   const id = str(formData.get("id"));
   const storagePath = str(formData.get("storage_path"));
@@ -576,6 +604,7 @@ export async function updateContactStatus(formData: FormData) {
   } catch (e) {
     guard(e, path);
   }
+  await assertWritable(path);
 
   const id = str(formData.get("id"));
   const status = str(formData.get("status")) as ContactStatus;
@@ -610,6 +639,7 @@ export async function deleteContactMessage(formData: FormData) {
   } catch (e) {
     guard(e, path);
   }
+  await assertWritable(path);
   const err = await remove("contact_messages", str(formData.get("id")));
   if (err) fail(path, `Không xoá được: ${err}`);
   revalidatePath("/admin/cau-hoi");
@@ -623,6 +653,7 @@ export async function deleteNewsletter(formData: FormData) {
   } catch (e) {
     guard(e, path);
   }
+  await assertWritable(path);
   const err = await remove("newsletters", str(formData.get("id")));
   if (err) fail(path, `Không xoá được: ${err}`);
   revalidatePath("/admin/newsletter");
@@ -636,6 +667,7 @@ export async function toggleNewsletter(formData: FormData) {
   } catch (e) {
     guard(e, path);
   }
+  await assertWritable(path);
 
   const id = str(formData.get("id"));
   const active = bool(formData.get("is_active")) === false;
@@ -661,6 +693,7 @@ export async function updateAccountRole(formData: FormData) {
   } catch (e) {
     guard(e, path);
   }
+  await assertWritable(path);
 
   const id = str(formData.get("id"));
   const role = str(formData.get("role")) as Role;
@@ -694,6 +727,7 @@ export async function toggleAccountActive(formData: FormData) {
   } catch (e) {
     guard(e, path);
   }
+  await assertWritable(path);
 
   const id = str(formData.get("id"));
   const active = bool(formData.get("is_active")) === false;
@@ -725,6 +759,7 @@ export async function createAccount(
   } catch (e) {
     guard(e, path);
   }
+  await assertWritable(path);
 
   const full_name = str(formData.get("full_name"));
   const email = str(formData.get("email")).toLowerCase();

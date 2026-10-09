@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { UploadCloud, Link2, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { quotaState, quotaLockMessage } from "@/lib/admin/quota";
 import { toDirectImageUrl } from "@/lib/drive-link";
 import { Field } from "./ui";
 
@@ -30,6 +31,20 @@ function safeName(name: string) {
     .replace(/[^a-zA-Z0-9._-]/g, "-")
     .replace(/-+/g, "-")
     .slice(-60);
+}
+
+/** Trả về thông báo khóa ghi nếu đã chạm hạn mức, null nếu được phép ghi. */
+async function quotaLockReason(
+  supabase: ReturnType<typeof createClient>,
+): Promise<string | null> {
+  const { data, error } = await supabase.rpc("quota_status");
+  if (error || !data) return null;
+  const raw = data as { database_bytes?: number; storage_bytes?: number };
+  const state = quotaState({
+    databaseBytes: Number(raw.database_bytes ?? 0),
+    storageBytes: Number(raw.storage_bytes ?? 0),
+  });
+  return state.locked ? quotaLockMessage(state) : null;
 }
 
 export default function MediaUploader({ canManage = false }: { canManage?: boolean }) {
@@ -67,6 +82,12 @@ export default function MediaUploader({ canManage = false }: { canManage?: boole
     } = await supabase.auth.getUser();
     if (!user) {
       finish("Phiên đăng nhập không hợp lệ. Hãy đăng nhập lại.", false);
+      return;
+    }
+
+    const locked = await quotaLockReason(supabase);
+    if (locked) {
+      finish(locked, false);
       return;
     }
 
@@ -130,6 +151,12 @@ export default function MediaUploader({ canManage = false }: { canManage?: boole
     const {
       data: { user },
     } = await supabase.auth.getUser();
+
+    const locked = await quotaLockReason(supabase);
+    if (locked) {
+      finish(locked, false);
+      return;
+    }
 
     const { error } = await supabase.from("media").insert({
       kind: effectiveKind,

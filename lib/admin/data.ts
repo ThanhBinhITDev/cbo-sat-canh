@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
+import type { QuotaUsage } from "@/lib/admin/quota";
 import type {
   ContactMessage,
   Media,
@@ -262,6 +263,94 @@ export async function getLinkCounts(): Promise<AdminValue<LinkCounts>> {
       posts: (posts.data ?? []).length,
       services: (services.data ?? []).length,
       team: (team.data ?? []).length,
+    },
+  };
+}
+
+/* ------------------------------------------------------------------ *
+ * Dung lượng Supabase (thẻ trên Dashboard)
+ * ------------------------------------------------------------------ */
+
+export type SupabaseUsage = {
+  databaseBytes: number;
+  storageBytes: number;
+  fileCount: number;
+  tables: { name: string; bytes: number }[];
+};
+
+/**
+ * Nhóm dung lượng qua RPC `admin_usage_stats` (SECURITY DEFINER, chỉ admin).
+ * - `null`: không phải admin / chưa cấu hình → caller ẩn thẻ.
+ * - Lỗi khác (vd. chưa chạy migration) → AdminError hiện trong thẻ.
+ */
+export async function getSupabaseUsage(): Promise<
+  AdminValue<SupabaseUsage> | null
+> {
+  if (!isSupabaseConfigured) return null;
+  const supabase = await createClient();
+  if (!supabase) return null;
+
+  const { data, error } = await supabase.rpc("admin_usage_stats");
+  if (error) {
+    // Lỗi quyền của hàm (raise exception 'forbidden', errcode 42501)
+    // → không phải admin, ẩn thẻ thay vì báo lỗi.
+    if (
+      error.code === "42501" ||
+      /forbidden|permission denied/i.test(error.message)
+    ) {
+      return null;
+    }
+    return failValue("Không tải được dung lượng Supabase.", error.message);
+  }
+
+  const raw = data as {
+    database_bytes?: number;
+    storage_bytes?: number;
+    file_count?: number;
+    tables?: { name: string; bytes: number }[];
+  };
+
+  return {
+    ok: true,
+    value: {
+      databaseBytes: Number(raw.database_bytes ?? 0),
+      storageBytes: Number(raw.storage_bytes ?? 0),
+      fileCount: Number(raw.file_count ?? 0),
+      tables: Array.isArray(raw.tables) ? raw.tables : [],
+    },
+  };
+}
+
+/**
+ * Trạng thái hạn mức qua RPC `quota_status` (SECURITY DEFINER, mọi staff) —
+ * dùng cho banner cảnh báo và khóa ghi (khác `getSupabaseUsage` là admin-only).
+ * - `null`: không phải staff / chưa cấu hình.
+ * - Lỗi khác → AdminError.
+ */
+export async function getQuotaStatus(): Promise<
+  AdminValue<QuotaUsage> | null
+> {
+  if (!isSupabaseConfigured) return null;
+  const supabase = await createClient();
+  if (!supabase) return null;
+
+  const { data, error } = await supabase.rpc("quota_status");
+  if (error) {
+    if (
+      error.code === "42501" ||
+      /forbidden|permission denied/i.test(error.message)
+    ) {
+      return null;
+    }
+    return failValue("Không tải được trạng thái dung lượng.", error.message);
+  }
+
+  const raw = data as { database_bytes?: number; storage_bytes?: number };
+  return {
+    ok: true,
+    value: {
+      databaseBytes: Number(raw.database_bytes ?? 0),
+      storageBytes: Number(raw.storage_bytes ?? 0),
     },
   };
 }
