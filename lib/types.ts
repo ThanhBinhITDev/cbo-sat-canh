@@ -3,6 +3,8 @@ export type Role = "admin" | "editor" | "collaborator";
 export type Profile = {
   id: string;
   full_name: string;
+  /** Tên đăng nhập tùy chọn (đăng nhập thay cho email), có thể null. */
+  username: string | null;
   email: string;
   role: Role;
   avatar_url: string | null;

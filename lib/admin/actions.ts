@@ -4,11 +4,13 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireRole, AuthError } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getQuotaStatus } from "@/lib/admin/data";
 import { quotaState, quotaLockMessage } from "@/lib/admin/quota";
 import { invalidateSettingsCache } from "@/lib/settings";
 import { slugify } from "@/lib/slug";
 import { normalizeTheme, type Theme } from "@/lib/theme";
+import { normalizeUsername, validateUsername, isValidEmail } from "@/lib/account";
 import type {
   ContactStatus,
   PostCategory,
@@ -761,7 +763,8 @@ export async function createAccount(
   }
   await assertWritable(path);
 
-  const full_name = str(formData.get("full_name"));
+  const full_name = str(formData.get("full_name"), 150);
+  const username = normalizeUsername(str(formData.get("username"), 30));
   const email = str(formData.get("email")).toLowerCase();
   const password = str(formData.get("password"));
   const role = str(formData.get("role")) as Role;
@@ -769,15 +772,35 @@ export async function createAccount(
   if (!full_name || !email || !password) {
     return { ok: false, message: "Vui lòng nhập đủ tên, email và mật khẩu tạm." };
   }
+  if (!isValidEmail(email)) {
+    return { ok: false, message: "Email không hợp lệ." };
+  }
   if (password.length < 8) {
     return { ok: false, message: "Mật khẩu tạm phải có ít nhất 8 ký tự." };
   }
   if (!["admin", "editor", "collaborator"].includes(role)) {
     return { ok: false, message: "Vai trò không hợp lệ." };
   }
+  const usernameErr = validateUsername(username);
+  if (usernameErr) return { ok: false, message: usernameErr };
 
-  const admin = await createClient();
-  if (!admin) return { ok: false, message: "Chưa cấu hình Supabase (thiếu .env.local)." };
+  // auth.admin.* CHỈ chạy được với service-role key.
+  const admin = createAdminClient();
+  if (!admin) {
+    return {
+      ok: false,
+      message: "Thiếu SUPABASE_SECRET_KEY trong .env.local — không tạo được tài khoản.",
+    };
+  }
+
+  if (username) {
+    const { data: resolved } = await admin.rpc("resolve_login_identifier", {
+      p_identifier: username,
+    });
+    if (typeof resolved === "string") {
+      return { ok: false, message: `Tên đăng nhập "${username}" đã được dùng. Hãy chọn tên khác.` };
+    }
+  }
 
   const { data: created, error } = await admin.auth.admin.createUser({
     email,
@@ -798,15 +821,218 @@ export async function createAccount(
   const { error: profileError } = await admin.from("profiles").upsert({
     id: created.user.id,
     full_name,
+    username: username || null,
     email,
     role,
     is_active: true,
   });
   if (profileError) {
     await admin.auth.admin.deleteUser(created.user.id);
+    if (profileError.message.includes("username")) {
+      return { ok: false, message: "Tên đăng nhập đã tồn tại." };
+    }
+    if (profileError.message.includes("email")) {
+      return { ok: false, message: "Email này đã tồn tại." };
+    }
     return { ok: false, message: `Không tạo được hồ sơ: ${profileError.message}` };
   }
 
   revalidatePath(path);
   return { ok: true, message: `Đã tạo tài khoản ${email}.` };
+}
+
+/* ------------------------------------------------------------------ *
+ * Tài khoản — hồ sơ / email / mật khẩu
+ * ------------------------------------------------------------------ */
+
+/** Admin sửa tài khoản bất kỳ: họ tên, username, email (xác nhận ngay), mật khẩu. */
+export async function updateAccountProfile(
+  _prev: ActionState | null,
+  formData: FormData,
+): Promise<ActionState> {
+  const id = str(formData.get("id"));
+  const path = id ? `/admin/tai-khoan/${id}` : "/admin/tai-khoan";
+  try {
+    await requireRole(["admin"]);
+  } catch (e) {
+    guard(e, path);
+  }
+  await assertWritable(path);
+
+  const full_name = str(formData.get("full_name"), 150);
+  const username = normalizeUsername(str(formData.get("username"), 30));
+  const original_username = normalizeUsername(str(formData.get("original_username"), 30));
+  const email = str(formData.get("email")).toLowerCase();
+  const original_email = str(formData.get("original_email")).toLowerCase();
+  const password = str(formData.get("password"));
+
+  if (!id) return { ok: false, message: "Thiếu mã tài khoản." };
+  if (!full_name) return { ok: false, message: "Họ tên không được để trống." };
+  if (!isValidEmail(email)) return { ok: false, message: "Email không hợp lệ." };
+  if (password && password.length < 8) {
+    return { ok: false, message: "Mật khẩu mới phải có ít nhất 8 ký tự." };
+  }
+  const usernameErr = validateUsername(username);
+  if (usernameErr) return { ok: false, message: usernameErr };
+
+  const supabase = await createClient();
+  if (!supabase) return { ok: false, message: "Chưa cấu hình Supabase (thiếu .env.local)." };
+  const admin = createAdminClient();
+  if (!admin) {
+    return {
+      ok: false,
+      message: "Thiếu SUPABASE_SECRET_KEY trong .env.local — không sửa được tài khoản.",
+    };
+  }
+
+  if (username && username !== original_username) {
+    const { data: resolved } = await supabase.rpc("resolve_login_identifier", {
+      p_identifier: username,
+    });
+    if (typeof resolved === "string") {
+      return { ok: false, message: `Tên đăng nhập "${username}" đã được dùng. Hãy chọn tên khác.` };
+    }
+  }
+
+  if (email !== original_email) {
+    const { error } = await admin.auth.admin.updateUserById(id, {
+      email,
+      email_confirm: true,
+    });
+    if (error) {
+      return {
+        ok: false,
+        message: error.message.includes("already")
+          ? "Email này đã tồn tại trong hệ thống."
+          : `Không đổi được email: ${error.message}`,
+      };
+    }
+  }
+
+  if (password) {
+    const { error } = await admin.auth.admin.updateUserById(id, { password });
+    if (error) return { ok: false, message: `Không đổi được mật khẩu: ${error.message}` };
+  }
+
+  const err = await write(
+    "profiles",
+    {
+      id,
+      full_name,
+      username: username || null,
+      email,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "id" },
+  );
+  if (err) {
+    if (err.includes("username")) return { ok: false, message: "Tên đăng nhập đã tồn tại." };
+    if (err.includes("email")) return { ok: false, message: "Email này đã tồn tại." };
+    return { ok: false, message: `Không cập nhật được hồ sơ: ${err}` };
+  }
+
+  revalidatePath(path);
+  revalidatePath("/admin/tai-khoan");
+  return {
+    ok: true,
+    message: password
+      ? "Đã lưu tài khoản (kể cả mật khẩu mới)."
+      : "Đã lưu tài khoản.",
+  };
+}
+
+/** Mọi vai trò sửa hồ sơ của chính mình tại /admin/ho-so. */
+export async function updateMyProfile(formData: FormData) {
+  const path = "/admin/ho-so";
+  const supabase = await createClient();
+  if (!supabase) fail(path, "Chưa cấu hình Supabase (thiếu .env.local).");
+
+  let me;
+  try {
+    me = await requireRole(["admin", "editor", "collaborator"]);
+  } catch (e) {
+    guard(e, path);
+  }
+  await assertWritable(path);
+
+  const full_name = str(formData.get("full_name"), 150);
+  const username = normalizeUsername(str(formData.get("username"), 30));
+  const original_username = normalizeUsername(str(formData.get("original_username"), 30));
+
+  if (!full_name) fail(path, "Họ tên không được để trống.");
+  const usernameErr = validateUsername(username);
+  if (usernameErr) fail(path, usernameErr);
+
+  if (username && username !== original_username) {
+    const { data: resolved } = await supabase.rpc("resolve_login_identifier", {
+      p_identifier: username,
+    });
+    if (typeof resolved === "string") {
+      fail(path, `Tên đăng nhập "${username}" đã được dùng. Hãy chọn tên khác.`);
+    }
+  }
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ full_name, username: username || null })
+    .eq("id", me.id);
+  if (error) {
+    if (error.code === "23505") fail(path, "Tên đăng nhập đã tồn tại.");
+    fail(path, `Không cập nhật được hồ sơ: ${error.message}`);
+  }
+
+  revalidatePath(path);
+  flash(path, "Đã lưu hồ sơ.");
+}
+
+/** Đổi email của chính mình — cần bấm link xác nhận trong email mới. */
+export async function changeMyEmail(formData: FormData) {
+  const path = "/admin/ho-so";
+  const supabase = await createClient();
+  if (!supabase) fail(path, "Chưa cấu hình Supabase (thiếu .env.local).");
+
+  try {
+    await requireRole(["admin", "editor", "collaborator"]);
+  } catch (e) {
+    guard(e, path);
+  }
+  await assertWritable(path);
+
+  const email = str(formData.get("email")).toLowerCase();
+  if (!isValidEmail(email)) fail(path, "Email không hợp lệ.");
+
+  const { data: au } = await supabase.auth.getUser();
+  if (au.user?.email === email) fail(path, "Email mới trùng email hiện tại.");
+
+  const { error } = await supabase.auth.updateUser({ email });
+  if (error) fail(path, `Không gửi được yêu cầu đổi email: ${error.message}`);
+
+  flash(
+    path,
+    `Đã gửi link xác nhận tới ${email}. Bấm link trong email để hoàn tất — vẫn đăng nhập bằng email cũ cho đến khi xác nhận.`,
+  );
+}
+
+/** Đổi mật khẩu của chính mình. */
+export async function changeMyPassword(formData: FormData) {
+  const path = "/admin/ho-so";
+  const supabase = await createClient();
+  if (!supabase) fail(path, "Chưa cấu hình Supabase (thiếu .env.local).");
+
+  try {
+    await requireRole(["admin", "editor", "collaborator"]);
+  } catch (e) {
+    guard(e, path);
+  }
+  await assertWritable(path);
+
+  const password = str(formData.get("password"));
+  const confirm = str(formData.get("confirm"));
+  if (password.length < 8) fail(path, "Mật khẩu mới phải có ít nhất 8 ký tự.");
+  if (password !== confirm) fail(path, "Mật khẩu nhập lại không khớp.");
+
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) fail(path, `Không đổi được mật khẩu: ${error.message}`);
+
+  flash(path, "Đã đổi mật khẩu.");
 }

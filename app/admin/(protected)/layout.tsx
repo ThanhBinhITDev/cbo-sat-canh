@@ -37,6 +37,7 @@ export default async function ProtectedLayout({
       fullName={user.profile.full_name}
       email={user.email}
       role={user.profile.role}
+      avatarUrl={user.profile.avatar_url}
     >
       {quota?.ok && <QuotaBanner usage={quota.value} />}
       {children}

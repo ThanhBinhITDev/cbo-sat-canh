@@ -18,6 +18,19 @@ export default function AccountCreateForm() {
         <input name="full_name" required maxLength={150} className="input" placeholder="Nguyễn Văn A" />
       </Field>
 
+      <Field
+        label="Tên đăng nhập"
+        hint="Tùy chọn — dùng để đăng nhập thay cho email. 3–30 ký tự: chữ thường, số và . _ -"
+      >
+        <input
+          name="username"
+          maxLength={30}
+          autoComplete="off"
+          className="input"
+          placeholder="nguyenvana"
+        />
+      </Field>
+
       <Field label="Email" required>
         <input name="email" type="email" required className="input" placeholder="ten@email.com" />
       </Field>

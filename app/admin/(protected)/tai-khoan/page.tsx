@@ -1,4 +1,5 @@
-import { UserPlus, ShieldCheck, Ban, Check } from "lucide-react";
+import Link from "next/link";
+import { UserPlus, ShieldCheck, Ban, Check, Pencil } from "lucide-react";
 import { Flash, PageHeader, Panel, PanelHead, EmptyState } from "@/components/admin/ui";
 import { ErrorState } from "@/components/admin/States";
 import ConfirmSubmit from "@/components/admin/ConfirmSubmit";
@@ -86,13 +87,29 @@ export default async function AccountsPage({
                         <tr key={row.id}>
                           <td>
                             <div className="flex items-center gap-2.5">
-                              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10 text-sm font-black text-primary">
-                                {row.full_name.slice(0, 1).toUpperCase()}
-                              </span>
-                              <span className="font-semibold">
-                                {row.full_name}
-                                {isSelf && (
-                                  <span className="ml-1.5 text-xs font-bold text-ink/45">(bạn)</span>
+                              {row.avatar_url ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={row.avatar_url}
+                                  alt=""
+                                  className="h-9 w-9 shrink-0 rounded-full object-cover"
+                                />
+                              ) : (
+                                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10 text-sm font-black text-primary">
+                                  {row.full_name.slice(0, 1).toUpperCase()}
+                                </span>
+                              )}
+                              <span>
+                                <span className="font-semibold">
+                                  {row.full_name}
+                                  {isSelf && (
+                                    <span className="ml-1.5 text-xs font-bold text-ink/45">(bạn)</span>
+                                  )}
+                                </span>
+                                {row.username && (
+                                  <span className="block text-xs text-ink/50">
+                                    @{row.username}
+                                  </span>
                                 )}
                               </span>
                             </div>
@@ -135,10 +152,14 @@ export default async function AccountsPage({
                             {formatDate(row.created_at)}
                           </td>
                           <td>
-                            <div className="flex justify-end">
-                              {isSelf ? (
-                                <span className="text-xs text-ink/45">—</span>
-                              ) : (
+                            <div className="flex justify-end gap-2">
+                              <Link
+                                href={`/admin/tai-khoan/${row.id}`}
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1.5 text-[11px] font-bold text-ink/60 transition hover:border-primary hover:text-primary"
+                              >
+                                <Pencil size={13} /> Sửa
+                              </Link>
+                              {!isSelf && (
                                 <form action={toggleAccountActive}>
                                   <input type="hidden" name="id" value={row.id} />
                                   <input type="hidden" name="is_active" value={String(row.is_active)} />

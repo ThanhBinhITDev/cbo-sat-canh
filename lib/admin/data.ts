@@ -92,6 +92,21 @@ export const getNewslettersAdmin = () =>
   select<Newsletter>("newsletters", { col: "created_at", asc: false });
 export const getProfilesAdmin = () => select<Profile>("profiles", { col: "created_at" });
 
+/** Đọc 1 hồ sơ theo id (RLS admin). value = null khi không tìm thấy. */
+export async function getProfileAdmin(
+  id: string,
+): Promise<AdminValue<Profile | null>> {
+  const supabase = await createClient();
+  if (!supabase) return NOT_CONFIGURED;
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) return failWith("Không đọc được hồ sơ.", error.message);
+  return { ok: true, value: (data as Profile | null) ?? null };
+}
+
 /* ------------------------------------------------------------------ *
  * Thống kê dashboard
  * ------------------------------------------------------------------ */

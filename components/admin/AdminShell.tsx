@@ -15,6 +15,7 @@ import {
   CircleHelp,
   Mail,
   UserCog,
+  UserRound,
   LogOut,
   Menu,
   X,
@@ -61,15 +62,25 @@ export default function AdminShell({
   fullName,
   email,
   role,
+  avatarUrl,
 }: {
   children: ReactNode;
   fullName: string;
   email: string;
   role: Role;
+  avatarUrl?: string | null;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const items = NAV_ITEMS.filter((item) => item.roles.includes(role));
+  const initial = (fullName || email).slice(0, 1).toUpperCase();
+
+  const avatar = avatarUrl ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+  ) : (
+    initial
+  );
 
   const sidebar = (
     <div className="flex h-full flex-col">
@@ -130,10 +141,24 @@ export default function AdminShell({
       </nav>
 
       <div className="border-t border-line p-3">
-        <div className="mb-2 px-2">
-          <p className="truncate text-sm font-bold">{fullName || email}</p>
-          <p className="text-xs text-primary-dark">{ROLE_LABELS[role]}</p>
+        <div className="mb-2 flex items-center gap-2.5 px-2">
+          <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-primary/10 text-sm font-black text-primary">
+            {avatar}
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-bold">{fullName || email}</p>
+            <p className="truncate text-xs text-primary-dark">
+              {ROLE_LABELS[role]}
+            </p>
+          </div>
         </div>
+        <Link
+          href="/admin/ho-so"
+          onClick={() => setOpen(false)}
+          className="mb-1 flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-ink/80 transition hover:bg-muted hover:text-primary-dark"
+        >
+          <UserRound size={18} /> Sửa hồ sơ
+        </Link>
         <form action={signOut}>
           <button
             type="submit"
@@ -183,9 +208,13 @@ export default function AdminShell({
             <span className="hidden items-center gap-2 rounded-full bg-muted px-3 py-1.5 text-xs font-bold text-primary-dark sm:inline-flex">
               <span className="dot-new h-2 w-2 rounded-full" /> Đang hoạt động
             </span>
-            <span className="grid h-9 w-9 place-items-center rounded-full bg-primary-dark text-xs font-black text-white">
-              {(fullName || email).slice(0, 1).toUpperCase()}
-            </span>
+            <Link
+              href="/admin/ho-so"
+              aria-label="Sửa hồ sơ"
+              className="grid h-9 w-9 place-items-center overflow-hidden rounded-full bg-primary-dark text-xs font-black text-white"
+            >
+              {avatar}
+            </Link>
           </div>
         </header>
 

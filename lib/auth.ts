@@ -19,6 +19,7 @@ const PROBE_USER: SessionUser | null =
         profile: {
           id: "probe-session",
           full_name: "Thanh Bình",
+          username: null,
           email: "thanhbinhit@gmail.com",
           role: "admin",
           avatar_url: null,
@@ -48,6 +49,16 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     .maybeSingle();
 
   if (profile && profile.is_active === false) return null;
+
+  // Đồng bộ email sau khi người dùng xác nhận đổi email ở auth
+  // (profiles.email chỉ cập nhật khi họ bấm link xác nhận).
+  if (profile && user.email && profile.email !== user.email) {
+    const { error: syncErr } = await supabase
+      .from("profiles")
+      .update({ email: user.email })
+      .eq("id", user.id);
+    if (!syncErr) (profile as { email: string }).email = user.email;
+  }
 
   return {
     id: user.id,

@@ -37,7 +37,8 @@ export async function signIn(
   }
 
   revalidatePath("/", "layout");
-  return {};
+  // Chuyển ngay sang Dashboard — không redirect thì trang login vẫn đứng yên.
+  redirect("/admin");
 }
 
 export async function signOut() {
