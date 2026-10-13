@@ -7,10 +7,19 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getQuotaStatus } from "@/lib/admin/data";
 import { quotaState, quotaLockMessage } from "@/lib/admin/quota";
-import { invalidateSettingsCache } from "@/lib/settings";
+import { invalidateSettingsCache, getSettings } from "@/lib/settings";
 import { slugify } from "@/lib/slug";
 import { normalizeTheme, type Theme } from "@/lib/theme";
 import { normalizeUsername, validateUsername, isValidEmail } from "@/lib/account";
+import {
+  BRAND_FIELDS,
+  brandImageUrl,
+  brandPath,
+  normalizeBrand,
+  validateBrandImageFile,
+  type Brand,
+} from "@/lib/brand";
+import { storagePathFromPublicUrl } from "@/lib/avatar";
 import type {
   ContactStatus,
   PostCategory,
@@ -542,6 +551,88 @@ export async function saveTheme(formData: FormData) {
 
   const theme = normalizeTheme(draft);
   await saveSetting("theme", theme satisfies Theme, "/admin/giao-dien");
+}
+
+export async function saveBrand(formData: FormData) {
+  const path = "/admin/giao-dien";
+  try {
+    await requireRole(["admin"]);
+  } catch (e) {
+    guard(e, path);
+  }
+  await assertWritable(path);
+
+  const admin = createAdminClient();
+  if (!admin) fail(path, "Thiếu SUPABASE_SECRET_KEY trong .env.local nên không upload được ảnh.");
+
+  const current = normalizeBrand((await getSettings()).brand);
+
+  // Bước 1: đọc & hợp lệ hoá cả 3 trường (chưa upload gì cả).
+  const plan: { field: (typeof BRAND_FIELDS)[number]; file: File | null; value: string | null }[] = [];
+  for (const field of BRAND_FIELDS) {
+    const fileValue = formData.get(`${field}File`);
+    const file = fileValue instanceof File && fileValue.size > 0 ? fileValue : null;
+    if (file) {
+      const err = validateBrandImageFile(file);
+      const name =
+        field === "logoWide"
+          ? "logo dài"
+          : field === "logoSquare"
+            ? "logo vuông"
+            : field === "faviconLight"
+              ? "favicon sáng"
+              : "favicon tối";
+      if (err) fail(path, `Ảnh ${name}: ${err}`);
+    }
+    const clear = bool(formData.get(`${field}Clear`));
+    const url = str(formData.get(`${field}Url`), 2000);
+
+    let value: string | null;
+    if (file) {
+      value = "pending"; // sẽ gán URL thật sau khi upload
+    } else if (clear) {
+      value = null;
+    } else if (url.trim()) {
+      value = brandImageUrl(url);
+      if (!value) fail(path, "Ảnh phải là link http/https hoặc đường dẫn bắt đầu bằng /.");
+    } else {
+      value = null;
+    }
+    plan.push({ field, file, value });
+  }
+
+  // Bước 2: upload (nếu có file).
+  const uploaded: string[] = [];
+  const next: Brand = { ...current };
+  for (const item of plan) {
+    if (!item.file || !item.value) continue;
+    const key = brandPath(item.field, item.file.name);
+    const { error: up } = await admin.storage
+      .from("site-assets")
+      .upload(key, item.file, { cacheControl: "3600", upsert: false });
+    if (up) {
+      for (const k of uploaded) await admin.storage.from("site-assets").remove([k]);
+      fail(path, `Không upload được ảnh: ${up.message}`);
+    }
+    uploaded.push(key);
+    const { data: pub } = admin.storage.from("site-assets").getPublicUrl(key);
+    item.value = pub.publicUrl;
+  }
+  for (const item of plan) next[item.field] = item.value;
+
+  // Bước 3: dọn object cũ trong site-assets khi bị thay/bỏ.
+  const stale = BRAND_FIELDS.filter((f) => {
+    const old = current[f];
+    return old && old !== next[f] && storagePathFromPublicUrl(old);
+  });
+  if (stale.length) {
+    const keys = stale
+      .map((f) => storagePathFromPublicUrl(current[f] as string))
+      .filter((k): k is string => !!k);
+    await admin.storage.from("site-assets").remove(keys);
+  }
+
+  await saveSetting("brand", next, path);
 }
 
 /* ------------------------------------------------------------------ *

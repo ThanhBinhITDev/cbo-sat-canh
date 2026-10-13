@@ -8,6 +8,7 @@ type Props = {
   slogan: string;
   copyright: string;
   address: string;
+  logoUrl?: string | null;
 };
 
 const QUICK_LINKS = [
@@ -25,13 +26,13 @@ const SERVICES = [
   "Chuyển gửi điều trị HIV (ARV)",
 ];
 
-export default function Footer({ contact, slogan, copyright, address }: Props) {
+export default function Footer({ contact, slogan, copyright, address, logoUrl }: Props) {
   return (
     <footer className="mt-auto bg-primary-dark text-white">
       <div className="container-site grid gap-10 py-14 md:grid-cols-2 lg:grid-cols-4">
         <div>
           <Image
-            src="/images/brand/logo-cau.png"
+            src={logoUrl || "/images/brand/logo-cau.png"}
             alt="Logo CBO Sát Cánh"
             width={200}
             height={52}

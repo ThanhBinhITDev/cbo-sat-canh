@@ -63,12 +63,14 @@ export default function AdminShell({
   email,
   role,
   avatarUrl,
+  logoSquareUrl,
 }: {
   children: ReactNode;
   fullName: string;
   email: string;
   role: Role;
   avatarUrl?: string | null;
+  logoSquareUrl?: string | null;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -86,7 +88,7 @@ export default function AdminShell({
     <div className="flex h-full flex-col">
       <div className="flex h-[68px] items-center gap-2.5 border-b border-line px-5">
         <Image
-          src="/images/brand/logo-vong-tron.png"
+          src={logoSquareUrl || "/images/brand/logo-vong-tron.png"}
           alt=""
           width={36}
           height={36}

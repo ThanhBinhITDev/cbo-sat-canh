@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { DEFAULT_HOTLINE, SITE_URL } from "@/lib/env";
+import { normalizeBrand } from "@/lib/brand";
 import type {
   AboutContent,
   ContactInfo,
@@ -151,6 +152,7 @@ export async function getContent() {
     map: pick<MapContent>(s.map, DEFAULT_MAP),
     footer: pick(DEFAULT_FOOTER, DEFAULT_FOOTER),
     seo: pick(s.seo, DEFAULT_SEO),
+    brand: normalizeBrand(s.brand),
   };
 }
 

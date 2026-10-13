@@ -2,6 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth";
 import { getQuotaStatus } from "@/lib/admin/data";
+import { getSettings } from "@/lib/settings";
+import { normalizeBrand } from "@/lib/brand";
 import AdminShell from "@/components/admin/AdminShell";
 import QuotaBanner from "@/components/admin/QuotaBanner";
 
@@ -10,6 +12,7 @@ export default async function ProtectedLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   const user = await getSessionUser();
   const quota = await getQuotaStatus();
+  const brand = normalizeBrand((await getSettings()).brand);
 
   if (!user) redirect("/admin/login");
   if (!user.profile) {
@@ -38,6 +41,7 @@ export default async function ProtectedLayout({
       email={user.email}
       role={user.profile.role}
       avatarUrl={user.profile.avatar_url}
+      logoSquareUrl={brand.logoSquare}
     >
       {quota?.ok && <QuotaBanner usage={quota.value} />}
       {children}

@@ -3,7 +3,13 @@ import Link from "next/link";
 import { ArrowRight, ShieldCheck, Sparkles, Phone } from "lucide-react";
 import type { HeroContent } from "@/lib/types";
 
-export default function Hero({ hero }: { hero: HeroContent }) {
+export default function Hero({
+  hero,
+  logoSquareUrl,
+}: {
+  hero: HeroContent;
+  logoSquareUrl?: string | null;
+}) {
   return (
     <section
       id="top"
@@ -95,7 +101,7 @@ export default function Hero({ hero }: { hero: HeroContent }) {
                 />
                 <div className="relative z-[1] flex flex-col items-center">
                   <Image
-                    src="/images/brand/logo-vong-tron.png"
+                    src={logoSquareUrl || "/images/brand/logo-vong-tron.png"}
                     alt="CBO Sát Cánh"
                     width={260}
                     height={260}

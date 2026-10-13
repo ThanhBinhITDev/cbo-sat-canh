@@ -50,7 +50,7 @@ export default async function NewsPage({
 
   return (
     <>
-      <Header contact={content.contact} />
+      <Header contact={content.contact} logoUrl={content.brand.logoWide} />
       <main className="flex-1 pt-[72px]">
         <div
           className="border-b border-line"
@@ -140,6 +140,7 @@ export default async function NewsPage({
       </main>
       <Footer
         contact={content.contact}
+        logoUrl={content.brand.logoWide}
         slogan={content.footer.slogan}
         copyright={content.footer.copyright}
         address={content.contact.address}

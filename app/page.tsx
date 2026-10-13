@@ -37,9 +37,9 @@ export default async function HomePage() {
 
   return (
     <>
-      <Header contact={content.contact} />
+      <Header contact={content.contact} logoUrl={content.brand.logoWide} />
       <main className="flex-1">
-        <Hero hero={content.hero} />
+        <Hero hero={content.hero} logoSquareUrl={content.brand.logoSquare} />
         <AboutSection about={content.about} id="gioi-thieu" />
         <VisionMissionValues
           vision={content.vision}
@@ -56,6 +56,7 @@ export default async function HomePage() {
       </main>
       <Footer
         contact={content.contact}
+        logoUrl={content.brand.logoWide}
         slogan={content.footer.slogan}
         copyright={content.footer.copyright}
         address={content.contact.address}

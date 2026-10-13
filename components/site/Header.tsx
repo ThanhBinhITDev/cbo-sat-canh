@@ -16,10 +16,17 @@ const NAV = [
   { href: "/lien-he", label: "Liên hệ" },
 ];
 
-export default function Header({ contact }: { contact: ContactInfo }) {
+export default function Header({
+  contact,
+  logoUrl,
+}: {
+  contact: ContactInfo;
+  logoUrl?: string | null;
+}) {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const hotline = contact.hotline[0] ?? "";
+  const logo = logoUrl || "/images/brand/logo-cau.png";
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -46,7 +53,7 @@ export default function Header({ contact }: { contact: ContactInfo }) {
       <div className="container-site flex h-[72px] items-center gap-4">
         <Link href="/" aria-label="CBO Sát Cánh — Trang chủ" className="shrink-0">
           <Image
-            src="/images/brand/logo-cau.png"
+            src={logo}
             alt="Logo CBO Sát Cánh"
             width={190}
             height={48}
@@ -100,7 +107,7 @@ export default function Header({ contact }: { contact: ContactInfo }) {
           <div className="fixed left-0 top-0 z-50 flex h-dvh w-[86%] max-w-sm flex-col bg-surface shadow-2xl lg:hidden">
             <div className="flex h-[72px] shrink-0 items-center justify-between border-b border-line px-5">
               <Image
-                src="/images/brand/logo-cau.png"
+                src={logo}
                 alt="Logo CBO Sát Cánh"
                 width={150}
                 height={40}

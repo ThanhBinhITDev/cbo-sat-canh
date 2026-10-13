@@ -1,8 +1,10 @@
 import { Palette, MonitorSmartphone } from "lucide-react";
 import { Flash, PageHeader } from "@/components/admin/ui";
 import ThemeEditor from "@/components/admin/ThemeEditor";
+import BrandSettings from "@/components/admin/BrandSettings";
 import { getSettings } from "@/lib/settings";
 import { normalizeTheme } from "@/lib/theme";
+import { normalizeBrand } from "@/lib/brand";
 
 export default async function ThemeAdminPage({
   searchParams,
@@ -10,6 +12,7 @@ export default async function ThemeAdminPage({
   const sp = await searchParams;
   const settings = await getSettings();
   const theme = normalizeTheme(settings.theme);
+  const brand = normalizeBrand(settings.brand);
 
   return (
     <>
@@ -37,6 +40,8 @@ export default async function ThemeAdminPage({
         </p>
       </div>
 
+      <BrandSettings key={JSON.stringify(brand)} initial={brand} />
+      <div className="mt-5" />
       <ThemeEditor initial={theme} />
     </>
   );

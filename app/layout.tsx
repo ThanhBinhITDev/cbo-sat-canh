@@ -4,6 +4,7 @@ import Script from "next/script";
 import "./globals.css";
 import { getSettings } from "@/lib/settings";
 import { normalizeTheme, themeToStyle } from "@/lib/theme";
+import { normalizeBrand } from "@/lib/brand";
 import { SITE_NAME, SITE_URL } from "@/lib/env";
 
 const beVietnam = Be_Vietnam_Pro({
@@ -29,15 +30,29 @@ if(typeof t.fontScale==='number')r.setProperty('--brand-font-scale',String(t.fon
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSettings();
   const seo = (settings.seo ?? {}) as { title?: string; description?: string };
+  const brand = normalizeBrand(settings.brand);
   const title = seo.title ?? `${SITE_NAME} — Y tế cộng đồng & thiện nguyện xã hội`;
   const description =
     seo.description ??
     "Xét nghiệm nhanh HIV/STIs, PrEP, PEP, chuyển gửi điều trị ARV. Đồng hành cùng cộng đồng khỏe mạnh, bình đẳng, nhân ái.";
 
+  // Favicon theo chế độ trình duyệt: cả 2 ô → 2 link media; 1 ô → 1 link chung; không có → /favicon.ico.
+  const { faviconLight: favLight, faviconDark: favDark } = brand;
+  const icons: Metadata["icons"] =
+    favLight && favDark
+      ? {
+          icon: [
+            { url: favLight, media: "(prefers-color-scheme: light)" },
+            { url: favDark, media: "(prefers-color-scheme: dark)" },
+          ],
+        }
+      : { icon: favLight || favDark || "/favicon.ico" };
+
   return {
     metadataBase: new URL(SITE_URL),
     title: { default: title, template: `%s | ${SITE_NAME}` },
     description,
+    icons,
     openGraph: {
       type: "website",
       locale: "vi_VN",
