@@ -3,6 +3,7 @@ import { isSupabaseConfigured } from "@/lib/env";
 import type { QuotaUsage } from "@/lib/admin/quota";
 import type {
   ContactMessage,
+  HeroSlide,
   Media,
   Newsletter,
   Partner,
@@ -82,6 +83,7 @@ export async function getPostAdmin(id: string) {
 
 export const getServicesAdmin = () => select<Service>("services", { col: "sort_order" });
 export const getPartnersAdmin = () => select<Partner>("partners", { col: "sort_order" });
+export const getHeroSlidesAdmin = () => select<HeroSlide>("hero_slides", { col: "sort_order" });
 export const getPartnerGroupsAdmin = () =>
   select<PartnerGroup>("partner_groups", { col: "sort_order" });
 export const getTeamAdmin = () => select<TeamMember>("team_members", { col: "sort_order" });

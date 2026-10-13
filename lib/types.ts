@@ -127,6 +127,14 @@ export type ContactInfo = {
   working_hours: string;
 };
 
+export type HeroSlide = {
+  id: string;
+  image_url: string;
+  alt: string | null;
+  sort_order: number;
+  is_active: boolean;
+};
+
 export type HeroContent = {
   title: string;
   subtitle: string;

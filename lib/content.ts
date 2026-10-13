@@ -1,5 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
-import type { Partner, PartnerGroup, Post, Service, TeamMember } from "@/lib/types";
+import type {
+  HeroSlide,
+  Partner,
+  PartnerGroup,
+  Post,
+  Service,
+  TeamMember,
+} from "@/lib/types";
 
 /* ------------------------------------------------------------------ *
  * Dữ liệu mặc định khi chưa kết nối Supabase.
@@ -126,6 +133,19 @@ export async function getPartners(): Promise<Partner[]> {
     .order("sort_order");
 
   return (data as Partner[])?.length ? (data as Partner[]) : DEFAULT_PARTNERS;
+}
+
+/** Slide banner trang chủ. Rỗng = ẩn slider (không có dữ liệu mặc định). */
+export async function getHeroSlides(): Promise<HeroSlide[]> {
+  const supabase = await createClient();
+  if (!supabase) return [];
+
+  const { data } = await supabase
+    .from("hero_slides")
+    .select("*")
+    .order("sort_order");
+
+  return (data as HeroSlide[]) ?? [];
 }
 
 export async function getPartnerGroups(): Promise<PartnerGroup[]> {

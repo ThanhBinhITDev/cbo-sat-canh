@@ -1,15 +1,162 @@
-import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, ShieldCheck, Sparkles, Phone } from "lucide-react";
-import type { HeroContent } from "@/lib/types";
+import { ArrowRight, ShieldCheck, Sparkles } from "lucide-react";
+import HeroSlider from "@/components/site/HeroSlider";
+import type { HeroContent, HeroSlide } from "@/lib/types";
+
+const TRUST_PILLS = [
+  "Bảo mật tuyệt đối",
+  "Không kỳ thị",
+  "Tư vấn miễn phí",
+] as const;
+
+function HeroCopy({ hero, overlay }: { hero: HeroContent; overlay: boolean }) {
+  return (
+    <>
+      {hero.badge && (
+        <p
+          className={`mb-3 inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 text-xs font-bold shadow-sm backdrop-blur-sm sm:mb-5 sm:gap-2 sm:px-4 sm:py-1.5 sm:text-xs ${
+            overlay
+              ? "border-none bg-white/15 text-white ring-1 ring-white/25"
+              : "border border-line bg-surface/95 text-primary-dark"
+          }`}
+        >
+          <Sparkles
+            size={13}
+            className={overlay ? "text-white sm:size-3.5" : "text-primary sm:size-3.5"}
+          />{" "}
+          {hero.badge}
+        </p>
+      )}
+
+      <h1
+        className={`text-balance text-[clamp(1.65rem,7vw,3.45rem)] font-extrabold leading-[1.14] tracking-tight break-words sm:text-[clamp(1.9rem,5.4vw,3.75rem)] sm:leading-[1.1] ${
+          overlay ? "text-white" : "text-primary-dark"
+        }`}
+      >
+        {hero.title}
+      </h1>
+
+      {/* Subtitle: trên mobile khi có overlay thì dời xuống dải sáng; sm+ hiển thị ngay trên ảnh */}
+      <p
+        className={`mt-4 max-w-xl text-balance text-base leading-relaxed sm:mt-5 sm:text-[1.05rem] ${
+          overlay
+            ? "hidden text-white/90 sm:block"
+            : "text-ink/90"
+        }`}
+      >
+        {hero.subtitle}
+      </p>
+
+      <div className="mt-4 flex flex-wrap items-center gap-2 sm:mt-8 sm:gap-3">
+        <Link
+          href={hero.cta_href || "/lien-he"}
+          className="btn btn-primary group min-w-[160px] justify-center !py-2.5 !text-sm sm:min-w-[160px] sm:!py-3 sm:!text-sm"
+        >
+          {hero.cta_label}
+          <ArrowRight
+            size={16}
+            className="transition-transform group-hover:translate-x-0.5 sm:size-[18px]"
+          />
+        </Link>
+        {/* Ghost button: trên mobile dời xuống dải sáng; sm+ hiển thị cạnh nút chính */}
+        {overlay ? (
+          <span className="hidden sm:inline-flex">
+            <Link
+              href="/#dich-vu"
+              className="btn min-w-[140px] border border-white/25 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20"
+            >
+              Xem dịch vụ
+            </Link>
+          </span>
+        ) : (
+          <Link
+            href="/#dich-vu"
+            className="btn btn-ghost min-w-[140px]"
+          >
+            Xem dịch vụ
+          </Link>
+        )}
+      </div>
+
+      {/* Pills: trên mobile dời xuống dải sáng; sm+ hiển thị trên ảnh */}
+      <ul
+        className={`mt-8 flex-wrap items-center gap-1.5 sm:gap-2 ${
+          overlay ? "hidden sm:flex" : "flex"
+        }`}
+      >
+        {TRUST_PILLS.map((item) => (
+          <li
+            key={item}
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium shadow-sm backdrop-blur-sm sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm ${
+              overlay
+                ? "border-none bg-white/10 text-white ring-1 ring-white/20"
+                : "border border-line bg-surface/98 text-ink/90"
+            }`}
+          >
+            <ShieldCheck
+              size={16}
+              className={overlay ? "text-white sm:size-[17px]" : "text-primary sm:size-[17px]"}
+            />
+            <span className="whitespace-nowrap">{item}</span>
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
+/** Dải nội dung phụ cho mobile khi có slider: nằm dưới ảnh trên nền sáng, chữ tối */
+function HeroBandMobile({ hero }: { hero: HeroContent }) {
+  return (
+    <div className="container-site py-6 sm:hidden">
+      <div className="max-w-xl">
+        <p className="text-balance text-sm leading-relaxed text-ink/85 sm:text-base">
+          {hero.subtitle}
+        </p>
+
+        {/* Nút Xem dịch vụ nổi bật hơn với viền và nền brand xanh dịu */}
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <Link
+            href="/#dich-vu"
+            className="group inline-flex items-center justify-center gap-2 rounded-xl border-1.5 border-primary/35 bg-primary/10 px-5 py-2.5 text-sm font-bold text-primary-dark shadow-xs transition hover:bg-primary/20 active:translate-y-px"
+          >
+            Xem dịch vụ
+            <ArrowRight
+              size={15}
+              className="text-primary transition-transform group-hover:translate-x-0.5"
+            />
+          </Link>
+        </div>
+
+        {/* Dải cam kết: cuộn ngang mượt mà trên mobile để tránh rớt 1 pill lẻ (luật R3) */}
+        <div className="-mx-5 overflow-x-auto px-5 scrollbar-none">
+          <ul className="mt-5 flex w-max items-center gap-2">
+            {TRUST_PILLS.map((item) => (
+              <li
+                key={item}
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface/95 px-3 py-1 text-xs font-medium text-ink/85 shadow-sm"
+              >
+                <ShieldCheck size={14} className="text-primary" />
+                <span className="whitespace-nowrap">{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Hero({
   hero,
-  logoSquareUrl,
+  slides,
 }: {
   hero: HeroContent;
-  logoSquareUrl?: string | null;
+  slides: HeroSlide[];
 }) {
+  const visibleSlides = slides.filter((s) => s.is_active);
+  const hasSlides = visibleSlides.length > 0;
+
   return (
     <section
       id="top"
@@ -19,7 +166,6 @@ export default function Hero({
           "radial-gradient(140% 120% at 0% 0%, color-mix(in srgb, var(--brand-primary) 6%, var(--brand-surface)) 0%, var(--brand-surface) 58%, color-mix(in srgb, var(--brand-muted) 68%, var(--brand-surface)) 100%)",
       }}
     >
-      {/* Trang trí nền */}
       <div
         aria-hidden
         className="pointer-events-none absolute -right-40 -top-40 h-[480px] w-[480px] rounded-full bg-primary/10 blur-3xl"
@@ -29,110 +175,45 @@ export default function Hero({
         className="pointer-events-none absolute -bottom-48 -left-32 h-[420px] w-[420px] rounded-full bg-primary-dark/8 blur-3xl"
       />
 
-      <div className="container-site relative grid items-center gap-12 py-16 lg:grid-cols-2 lg:py-24">
-        <div>
-          {hero.badge && (
-            <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-line bg-surface/95 px-4 py-1.5 text-xs font-bold text-primary-dark shadow-sm backdrop-blur-sm transition hover:shadow-md">
-              <Sparkles size={14} className="text-primary" /> {hero.badge}
-            </p>
-          )}
+      {hasSlides ? (
+        <div className="relative">
+          {/* Vùng ảnh slider */}
+          <div className="relative">
+            <HeroSlider slides={visibleSlides} />
 
-          <h1 className="text-balance text-[clamp(1.75rem,5.2vw,3.45rem)] font-extrabold leading-[1.1] tracking-tight text-primary-dark break-words">
-            {hero.title}
-          </h1>
+            {/* Scrim mobile: gradient từ trên xuống để chữ trắng ở nửa trên đọc rõ */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[rgba(10,18,34,0.85)] via-[rgba(10,18,34,0.55)] to-[rgba(10,18,34,0.15)] sm:hidden"
+            />
 
-          <p className="mt-5 max-w-xl text-balance text-base leading-relaxed text-ink/90 sm:text-[1.05rem]">
-            {hero.subtitle}
-          </p>
+            {/* Scrim tablet/desktop: gradient trái sang phải */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 hidden bg-gradient-to-r from-[rgba(10,18,34,0.82)] via-[rgba(10,18,34,0.48)] to-transparent sm:block"
+            />
 
-          <div className="mt-8 flex flex-wrap gap-2.5 sm:gap-3">
-            <Link href={hero.cta_href || "/lien-he"} className="btn btn-primary group min-w-[160px] justify-center">
-              {hero.cta_label}
-              <ArrowRight
-                size={18}
-                className="transition-transform group-hover:translate-x-0.5"
-              />
-            </Link>
-            <Link href="/#dich-vu" className="btn btn-ghost min-w-[140px] justify-center">
-              Xem dịch vụ
-            </Link>
-          </div>
-
-          <ul className="mt-8 flex flex-wrap items-center gap-1.5 sm:gap-2">
-            {[
-              "Bảo mật tuyệt đối",
-              "Không kỳ thị",
-              "Tư vấn miễn phí",
-            ].map((item) => (
-              <li
-                key={item}
-                className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface/98 px-2.5 py-1 text-xs font-medium text-ink/90 shadow-sm backdrop-blur-sm sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
-              >
-                <ShieldCheck size={16} className="text-primary sm:size-[17px]" />
-                <span className="whitespace-nowrap">{item}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="relative mt-2 lg:mt-0">
-          <div className="relative overflow-hidden rounded-2xl border border-line/80 bg-surface shadow-[0_24px_60px_-30px_rgba(39,156,215,0.25)] sm:rounded-3xl">
-            {hero.image ? (
-              <Image
-                src={hero.image}
-                alt={hero.title}
-                width={960}
-                height={720}
-                priority
-                sizes="(max-width: 1024px) 100vw, 50vw"
-                className="aspect-[4/3] w-full object-cover"
-              />
-            ) : (
-              <div
-                className="relative grid aspect-[4/3] w-full place-items-center overflow-hidden p-6 text-center sm:p-8"
-                style={{
-                  background:
-                    "radial-gradient(150% 150% at 50% 12%, color-mix(in srgb, var(--brand-primary) 8%, var(--brand-surface)) 0%, var(--brand-surface) 72%, color-mix(in srgb, var(--brand-muted) 65%, var(--brand-surface)) 100%)",
-                }}
-              >
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute -top-24 left-1/2 h-56 w-56 -translate-x-1/2 rounded-full bg-primary/10 blur-2xl sm:-top-28 sm:h-64 sm:w-64 sm:blur-3xl"
-                />
-                <div className="relative z-[1] flex flex-col items-center">
-                  <Image
-                    src={logoSquareUrl || "/images/brand/logo-vong-tron.png"}
-                    alt="CBO Sát Cánh"
-                    width={260}
-                    height={260}
-                    className="mx-auto mb-4 h-28 w-auto sm:mb-5 sm:h-40"
-                  />
-                  <p className="text-base font-bold tracking-tight text-primary-dark sm:text-lg">
-                    CBO SÁT CÁNH
-                  </p>
-                  <p className="mt-1 text-xs text-ink/90 sm:text-sm">
-                    Y tế cộng đồng &amp; thiện nguyện xã hội
-                  </p>
+            {/* Overlay chữ: mobile ở góc trên ảnh (pt-4.5 vừa khít tỷ lệ 16:10); sm+ căn giữa dọc toàn khung */}
+            <div className="pointer-events-none absolute inset-0 z-10 flex items-start pt-4 sm:items-center sm:pt-0">
+              <div className="container-site pointer-events-auto w-full py-1 sm:py-6">
+                <div className="max-w-xl sm:max-w-2xl">
+                  <HeroCopy hero={hero} overlay={true} />
                 </div>
               </div>
-            )}
-          </div>
-
-          <div className="absolute -bottom-5 left-1/2 hidden -translate-x-1/2 items-center gap-2.5 rounded-2xl border border-line bg-surface/98 px-4 py-2.5 shadow-lg backdrop-blur-sm xs:inline-flex sm:-bottom-6 sm:left-3 sm:translate-x-0 sm:gap-3 sm:px-5 sm:py-3 sm:shadow-xl lg:-left-6">
-            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary/10 text-primary sm:h-9 sm:w-9">
-              <Phone size={15} />
-            </span>
-            <div className="leading-tight">
-              <p className="text-[9px] font-semibold uppercase tracking-wide text-ink/55 sm:text-[10px]">
-                Hotline hỗ trợ
-              </p>
-              <p className="text-base font-extrabold text-primary-dark sm:text-lg">
-                0967.206.095
-              </p>
             </div>
           </div>
+
+          {/* Dải nội dung phụ cho mobile: subtitle + nút dịch vụ + pills trên nền sáng */}
+          <HeroBandMobile hero={hero} />
         </div>
-      </div>
+      ) : (
+        /* Trường hợp chưa có slide: bố cục chữ tối truyền thống */
+        <div className="container-site py-16 lg:py-24">
+          <div className="max-w-2xl">
+            <HeroCopy hero={hero} overlay={false} />
+          </div>
+        </div>
+      )}
     </section>
   );
 }

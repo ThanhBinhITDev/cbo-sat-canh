@@ -282,6 +282,25 @@ html.no-fouc * {
   animation: slide-in 0.25s ease-out;
 }
 
+/* --- Hero slider: Ken Burns + thanh đếm autoplay --- */
+@keyframes hero-zoom {
+  from {
+    transform: scale(1.08);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes hero-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
 /* ============================ QUẢN TRỊ ============================ */
 .field {
   display: block;

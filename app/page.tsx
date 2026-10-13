@@ -13,6 +13,7 @@ import ThemeSwitcher from "@/components/site/ThemeSwitcher";
 import ContactFormSection from "@/components/site/ContactFormSection";
 import { getContent } from "@/lib/settings";
 import {
+  getHeroSlides,
   getPartnerGroups,
   getPartners,
   getPosts,
@@ -23,7 +24,7 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [content, services, partnerGroups, partners, members, featured] =
+  const [content, services, partnerGroups, partners, members, featured, slides] =
     await Promise.all([
       getContent(),
       getServices(),
@@ -31,6 +32,7 @@ export default async function HomePage() {
       getPartners(),
       getTeamMembers(),
       getPosts({ featured: true, limit: 3 }),
+      getHeroSlides(),
     ]);
 
   const posts = featured.length ? featured : await getPosts({ limit: 3 });
@@ -39,7 +41,7 @@ export default async function HomePage() {
     <>
       <Header contact={content.contact} logoUrl={content.brand.logoWide} />
       <main className="flex-1">
-        <Hero hero={content.hero} logoSquareUrl={content.brand.logoSquare} />
+        <Hero hero={content.hero} slides={slides} />
         <AboutSection about={content.about} id="gioi-thieu" />
         <VisionMissionValues
           vision={content.vision}

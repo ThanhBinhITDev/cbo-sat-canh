@@ -636,6 +636,133 @@ export async function saveBrand(formData: FormData) {
 }
 
 /* ------------------------------------------------------------------ *
+ * Slider banner trang chủ
+ * ------------------------------------------------------------------ */
+
+/** Đường dẫn object trong bucket site-assets: slides/<ts>-<ten>. */
+function slideUploadPath(fileName: string): string {
+  const safe =
+    fileName
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/đ/g, "d")
+      .replace(/[^a-zA-Z0-9._-]/g, "-")
+      .replace(/-+/g, "-")
+      .slice(-60) || "image";
+  return `slides/${Date.now()}-${safe}`;
+}
+
+export async function saveHeroSlide(formData: FormData) {
+  const path = "/admin/slider";
+  const id = str(formData.get("id"));
+  try {
+    await requireRole(["admin"]);
+  } catch (e) {
+    guard(e, path);
+  }
+  await assertWritable(path);
+
+  const alt = str(formData.get("alt"), 300);
+  const sort_order = num(formData.get("sort_order"), 0);
+  const is_active = bool(formData.get("is_active"));
+
+  const fileValue = formData.get("image_file");
+  const file = fileValue instanceof File && fileValue.size > 0 ? fileValue : null;
+  const url = brandImageUrl(str(formData.get("image_url"), 2000));
+
+  let imageUrl: string | null = null;
+  let uploadedKey: string | null = null;
+  if (file) {
+    const err = validateBrandImageFile(file);
+    if (err) fail(path, err, id ? { edit: id } : undefined);
+    const admin = createAdminClient();
+    if (!admin)
+      fail(path, "Thiếu SUPABASE_SECRET_KEY trong .env.local nên không upload được ảnh.", id ? { edit: id } : undefined);
+    const key = slideUploadPath(file.name);
+    const { error: up } = await admin.storage
+      .from("site-assets")
+      .upload(key, file, { cacheControl: "3600", upsert: false });
+    if (up) fail(path, `Không upload được ảnh: ${up.message}`, id ? { edit: id } : undefined);
+    uploadedKey = key;
+    const { data: pub } = admin.storage.from("site-assets").getPublicUrl(key);
+    imageUrl = pub.publicUrl;
+  } else if (url) {
+    imageUrl = url;
+  }
+  if (!imageUrl)
+    fail(
+      path,
+      "Vui lòng chọn file ảnh hoặc nhập URL ảnh.",
+      id ? { edit: id } : undefined,
+    );
+
+  // Ảnh cũ (nếu là object trong site-assets) sẽ bị dọn sau khi lưu thành công.
+  let oldKey: string | null = null;
+  if (id) {
+    const supabase = await createClient();
+    if (supabase) {
+      const { data: old } = await supabase
+        .from("hero_slides")
+        .select("image_url")
+        .eq("id", id)
+        .maybeSingle();
+      const oldUrl = old?.image_url;
+      if (typeof oldUrl === "string" && oldUrl && oldUrl !== imageUrl) {
+        oldKey = storagePathFromPublicUrl(oldUrl);
+      }
+    }
+  }
+
+  const row = {
+    image_url: imageUrl,
+    alt: alt || null,
+    sort_order,
+    is_active,
+    ...(id ? { id } : {}),
+  };
+  const err = await write("hero_slides", row, { onConflict: "id" });
+  if (err) {
+    if (uploadedKey) await createAdminClient()?.storage.from("site-assets").remove([uploadedKey]);
+    fail(path, `Không lưu được: ${err}`, id ? { edit: id } : undefined);
+  }
+
+  if (oldKey) await createAdminClient()?.storage.from("site-assets").remove([oldKey]);
+
+  revalidatePublic();
+  flash(path, id ? "Đã cập nhật slide." : "Đã thêm slide.");
+}
+
+export async function deleteHeroSlide(formData: FormData) {
+  const path = "/admin/slider";
+  const id = str(formData.get("id"));
+  try {
+    await requireRole(["admin"]);
+  } catch (e) {
+    guard(e, path);
+  }
+  await assertWritable(path);
+
+  const supabase = await createClient();
+  if (supabase) {
+    const { data: row } = await supabase
+      .from("hero_slides")
+      .select("image_url")
+      .eq("id", id)
+      .maybeSingle();
+    const key =
+      typeof row?.image_url === "string"
+        ? storagePathFromPublicUrl(row.image_url)
+        : null;
+    if (key) await createAdminClient()?.storage.from("site-assets").remove([key]);
+  }
+
+  const err = await remove("hero_slides", id);
+  if (err) fail(path, `Không xoá được: ${err}`);
+  revalidatePublic();
+  flash(path, "Đã xoá slide.");
+}
+
+/* ------------------------------------------------------------------ *
  * Quản lý ảnh
  * ------------------------------------------------------------------ */
 
