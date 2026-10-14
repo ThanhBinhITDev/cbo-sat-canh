@@ -3,7 +3,6 @@
 import { type ReactNode } from "react";
 import toast from "react-hot-toast";
 
-/** Nút submit hỏi xác nhận trước khi gửi (xoá / thao tác nguy hiểm). */
 export default function ConfirmSubmit({
   children,
   confirmText = "Bạn chắc chắn muốn thực hiện thao tác này?",
@@ -21,27 +20,38 @@ export default function ConfirmSubmit({
 }) {
   return (
     <button
-      type="submit"
+      type="button"
       name={name}
       value={value}
       disabled={disabled}
-      onClick={async (e) => {
-        e.preventDefault();
-        const form = e.currentTarget.form;
+      onClick={(e) => {
+        const form = (e.currentTarget as HTMLButtonElement).form;
         if (!form) return;
-        const ok = await toast.promise(
-          new Promise((res) => {
-            if (window.confirm(confirmText)) res(true);
-            else res(false);
-          }),
-          {
-            loading: "Đang xác nhận...",
-            success: "Đã xác nhận",
-            error: "Đã huỷ",
-          },
-          { success: { duration: 1000 }, error: { duration: 1000 } }
+        toast(
+          (t) => (
+            <div className="flex flex-col gap-2 p-1">
+              <p className="text-sm text-ink">{confirmText}</p>
+              <div className="flex gap-2">
+                <button
+                  className="btn btn-primary py-1 text-xs"
+                  onClick={() => {
+                    toast.dismiss(t.id);
+                    form.requestSubmit();
+                  }}
+                >
+                  Xoá
+                </button>
+                <button
+                  className="btn bg-muted py-1 text-xs text-ink/80"
+                  onClick={() => toast.dismiss(t.id)}
+                >
+                  Huỷ
+                </button>
+              </div>
+            </div>
+          ),
+          { duration: Infinity }
         );
-        if (ok) form.requestSubmit();
       }}
       className={`inline-flex h-8 items-center gap-1.5 rounded-xl border border-line px-3 text-xs font-bold transition disabled:opacity-50 ${
         danger ? "t-danger" : "text-ink/80 hover:bg-primary/5 hover:text-primary"
