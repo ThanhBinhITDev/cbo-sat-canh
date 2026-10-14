@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, HandHeart } from "lucide-react";
 import NewsletterForm from "./NewsletterForm";
+import Particles from "./Particles";
 import type { ContactInfo } from "@/lib/types";
 
 export default function CtaSection({ contact }: { contact: ContactInfo }) {
@@ -12,6 +13,7 @@ export default function CtaSection({ contact }: { contact: ContactInfo }) {
         aria-hidden
         className="pointer-events-none absolute -right-20 top-0 h-72 w-72 rounded-full bg-primary/10 blur-3xl"
       />
+      <Particles />
       <div className="container-site relative grid gap-10 lg:grid-cols-2">
         <div>
           <span className="mb-3 inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-primary-dark">

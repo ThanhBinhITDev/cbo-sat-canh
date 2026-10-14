@@ -301,6 +301,26 @@ html.no-fouc * {
   }
 }
 
+/* Chấm trong icon chuột của nút "cuộn xuống" trôi xuống rồi về chỗ. */
+@keyframes hero-scroll-dot {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(6px);
+    opacity: 0.35;
+  }
+}
+
+/* Cuộn mượt cho liên kết neo — chỉ khi người dùng không yêu cầu giảm chuyển động. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
 /* ============================ QUẢN TRỊ ============================ */
 .field {
   display: block;

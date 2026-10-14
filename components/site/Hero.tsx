@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, ChevronDown, ShieldCheck, Sparkles } from "lucide-react";
 import HeroSlider from "@/components/site/HeroSlider";
 import type { HeroContent, HeroSlide } from "@/lib/types";
 
@@ -205,6 +205,26 @@ export default function Hero({
 
           {/* Dải nội dung phụ cho mobile: subtitle + nút dịch vụ + pills trên nền sáng */}
           <HeroBandMobile hero={hero} />
+
+          {/* Gợi ý cuộn xuống — nằm dưới slider trên nền sáng (chỉ tablet + desktop) */}
+          <a
+            href="#gioi-thieu"
+            aria-label="Cuộn xuống"
+            className="group mx-auto hidden w-full max-w-xs flex-col items-center gap-1 pb-8 pt-5 text-primary-dark transition hover:text-primary sm:flex"
+          >
+            <span
+              aria-hidden
+              className="h-7 w-px bg-gradient-to-b from-primary/10 to-primary/45"
+            />
+            <span
+              aria-hidden
+              className="flex h-7 w-[18px] justify-center rounded-full border-2 border-current pt-1"
+            >
+              <span className="h-2 w-[3px] animate-[hero-scroll-dot_1.6s_ease-in-out_infinite] rounded-full bg-current" />
+            </span>
+            <span className="text-[13px] font-semibold tracking-wide">Cuộn xuống</span>
+            <ChevronDown size={16} className="-mt-0.5 animate-bounce" />
+          </a>
         </div>
       ) : (
         /* Trường hợp chưa có slide: bố cục chữ tối truyền thống */
