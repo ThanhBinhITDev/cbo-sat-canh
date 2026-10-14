@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { Plus, Trash2 } from "lucide-react";
+import toast from "react-hot-toast";
 import { saveContentSection } from "@/lib/admin/actions";
 import { Field, PanelHead } from "./ui";
 import { SECTIONS, sectionProgress, type SectionKey } from "./content-sections";
@@ -36,7 +37,19 @@ export default function ContentEditor({ section, initial }: Props) {
         }
       />
 
-      <form action={saveContentSection} data-loading-mode="toast" className="flex flex-col">
+      <form
+        action={async (fd) => {
+          const t = toast.loading("Đang lưu nội dung...");
+          try {
+            await saveContentSection(fd);
+            toast.success("Đã lưu thay đổi", { id: t });
+          } catch (e: any) {
+            const msg = e?.message || "Không lưu được";
+            toast.error(msg, { id: t });
+          }
+        }}
+        data-loading-mode="none"
+        className="flex flex-col">
         <input type="hidden" name="section" value={section} />
         <input type="hidden" name="payload" value={JSON.stringify(data)} />
 
