@@ -566,7 +566,7 @@ export async function saveContentSection(_prev: ActionState | null, formData: Fo
     const payload = str(formData.get("payload"));
     const value = parseJson(payload, "/admin/noi-dung");
 
-    const allowed = ["hero", "about", "vision", "mission", "values", "contact", "map", "footer", "seo"];
+    const allowed = ["header", "hero", "about", "vision", "mission", "values", "contact", "map", "footer", "seo"];
     if (!allowed.includes(section)) fail("/admin/noi-dung", "Phần nội dung không hợp lệ.");
 
     const result = await saveSetting(section, value);

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { DEFAULT_HOTLINE, SITE_URL } from "@/lib/env";
 import { normalizeBrand } from "@/lib/brand";
+import { normalizeHeader, DEFAULT_HEADER_ADDRESS } from "@/lib/header";
 import { normalizeLoader } from "@/lib/loader";
 import { normalizeToast } from "@/lib/toast";
 import type {
@@ -137,6 +138,13 @@ function pick<T>(value: unknown, fallback: T): T {
 export async function getContent() {
   const s = await getSettings();
 
+  const contact = pick<ContactInfo>(s.contact, {
+    ...DEFAULT_CONTACT,
+    hotline: DEFAULT_HOTLINE.match(/\d+/g)
+      ? formatHotline(DEFAULT_HOTLINE)
+      : DEFAULT_CONTACT.hotline,
+  });
+
   return {
     hero: pick<HeroContent>(s.hero, DEFAULT_HERO),
     about: pick<AboutContent>(s.about, DEFAULT_ABOUT),
@@ -145,11 +153,10 @@ export async function getContent() {
     values: Array.isArray(s.values) && s.values.length
       ? (s.values as ValueItem[])
       : DEFAULT_VALUES,
-    contact: pick<ContactInfo>(s.contact, {
-      ...DEFAULT_CONTACT,
-      hotline: DEFAULT_HOTLINE.match(/\d+/g)
-        ? formatHotline(DEFAULT_HOTLINE)
-        : DEFAULT_CONTACT.hotline,
+    contact,
+    header: normalizeHeader(s.header, {
+      address: contact.address || DEFAULT_HEADER_ADDRESS,
+      phone: contact.hotline[0] ?? "",
     }),
     map: pick<MapContent>(s.map, DEFAULT_MAP),
     footer: pick(DEFAULT_FOOTER, DEFAULT_FOOTER),

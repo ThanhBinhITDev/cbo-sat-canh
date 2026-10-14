@@ -29,12 +29,13 @@ export default async function NewsPage({
 }: PageProps<"/tin-tuc">) {
   const params = await searchParams;
   const category = typeof params.category === "string" ? params.category : "";
+  const q = typeof params.q === "string" ? params.q.trim().slice(0, 100) : "";
   const page = Math.max(1, Number(params.trang) || 1);
   const perPage = 12;
 
   const [content, allPosts] = await Promise.all([
     getContent(),
-    getPosts({ category: category || undefined, limit: 200 }),
+    getPosts({ category: category || undefined, limit: 200, q: q || undefined }),
   ]);
 
   const totalPages = Math.max(1, Math.ceil(allPosts.length / perPage));
@@ -43,6 +44,7 @@ export default async function NewsPage({
   const buildHref = (key: string, targetPage = 1) => {
     const query = new URLSearchParams();
     if (key) query.set("category", key);
+    if (q) query.set("q", q);
     if (targetPage > 1) query.set("trang", String(targetPage));
     const qs = query.toString();
     return `/tin-tuc${qs ? `?${qs}` : ""}`;
@@ -50,8 +52,8 @@ export default async function NewsPage({
 
   return (
     <>
-      <Header contact={content.contact} logoUrl={content.brand.logoWide} />
-      <main className="flex-1 pt-[72px]">
+      <Header header={content.header} logoUrl={content.brand.logoWide} />
+      <main className="flex-1 pt-0">
         <div
           className="border-b border-line"
           style={{ background: "var(--brand-muted)" }}

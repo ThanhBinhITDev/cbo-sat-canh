@@ -6,13 +6,13 @@ import { useState, type ReactNode } from "react";
 import {
   LayoutDashboard,
   FileText,
-  Stethoscope,
-  Handshake,
-  Users,
   FileCode2,
-  Palette,
   Images,
   GalleryHorizontal,
+  Palette,
+  Stethoscope,
+  Users,
+  Handshake,
   CircleHelp,
   Mail,
   UserCog,
@@ -24,40 +24,34 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { signOut } from "@/app/admin/actions";
+import Breadcrumb from "./Breadcrumb";
 import type { Role } from "@/lib/types";
+import {
+  buildBreadcrumbs,
+  isNavActive,
+  visibleNav,
+} from "@/lib/admin/nav";
 
-export type NavItem = {
-  href: string;
-  label: string;
-  icon: ReactNode;
-  roles: Role[];
-  exact?: boolean;
+const ICONS: Record<string, ReactNode> = {
+  "/admin": <LayoutDashboard size={18} />,
+  "/admin/bai-viet": <FileText size={18} />,
+  "/admin/noi-dung": <FileCode2 size={18} />,
+  "/admin/anh": <Images size={18} />,
+  "/admin/slider": <GalleryHorizontal size={18} />,
+  "/admin/giao-dien": <Palette size={18} />,
+  "/admin/dich-vu": <Stethoscope size={18} />,
+  "/admin/doi-ngu": <Users size={18} />,
+  "/admin/doi-tac": <Handshake size={18} />,
+  "/admin/cau-hoi": <CircleHelp size={18} />,
+  "/admin/newsletter": <Mail size={18} />,
+  "/admin/tai-khoan": <UserCog size={18} />,
 };
-
-export const NAV_ITEMS: NavItem[] = [
-  { href: "/admin", label: "Dashboard", icon: <LayoutDashboard size={18} />, roles: ["admin", "editor", "collaborator"], exact: true },
-  { href: "/admin/bai-viet", label: "Bài viết & Tin tức", icon: <FileText size={18} />, roles: ["admin", "editor"] },
-  { href: "/admin/dich-vu", label: "Dịch vụ", icon: <Stethoscope size={18} />, roles: ["admin"] },
-  { href: "/admin/doi-tac", label: "Đối tác", icon: <Handshake size={18} />, roles: ["admin"] },
-  { href: "/admin/doi-ngu", label: "Đội ngũ", icon: <Users size={18} />, roles: ["admin"] },
-  { href: "/admin/slider", label: "Slider trang chủ", icon: <GalleryHorizontal size={18} />, roles: ["admin"] },
-  { href: "/admin/noi-dung", label: "Nội dung tĩnh", icon: <FileCode2 size={18} />, roles: ["admin"] },
-  { href: "/admin/giao-dien", label: "Giao diện", icon: <Palette size={18} />, roles: ["admin"] },
-  { href: "/admin/anh", label: "Quản lý ảnh", icon: <Images size={18} />, roles: ["admin", "editor"] },
-  { href: "/admin/cau-hoi", label: "Câu hỏi liên hệ", icon: <CircleHelp size={18} />, roles: ["admin", "editor", "collaborator"] },
-  { href: "/admin/newsletter", label: "Đăng ký nhận tin", icon: <Mail size={18} />, roles: ["admin", "collaborator"] },
-  { href: "/admin/tai-khoan", label: "Tài khoản", icon: <UserCog size={18} />, roles: ["admin"] },
-];
 
 const ROLE_LABELS: Record<Role, string> = {
   admin: "Quản trị viên",
   editor: "Biên tập viên",
   collaborator: "Cộng tác viên",
 };
-
-function isActive(pathname: string, item: NavItem) {
-  return item.exact ? pathname === item.href : pathname.startsWith(item.href);
-}
 
 export default function AdminShell({
   children,
@@ -76,7 +70,8 @@ export default function AdminShell({
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const items = NAV_ITEMS.filter((item) => item.roles.includes(role));
+  const groups = visibleNav(role);
+  const crumbs = buildBreadcrumbs(pathname);
   const initial = (fullName || email).slice(0, 1).toUpperCase();
 
   const avatar = avatarUrl ? (
@@ -113,26 +108,34 @@ export default function AdminShell({
       </div>
 
       <nav className="flex-1 overflow-y-auto p-3" aria-label="Menu quản trị">
-        {items.map((item) => {
-          const active = isActive(pathname, item);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setOpen(false)}
-              className={`mb-1 flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm transition ${
-                active
-                  ? "bg-primary/10 font-medium text-primary-dark"
-                  : "font-normal text-ink/80 hover:bg-muted hover:text-primary-dark"
-              }`}
-            >
-              <span className={active ? "text-primary-dark" : "text-primary"}>
-                {item.icon}
-              </span>
-              {item.label}
-            </Link>
-          );
-        })}
+        {groups.map((group) => (
+          <div key={group.key} className="mb-3">
+            <p className="px-3.5 pb-1.5 pt-2 text-[11px] font-bold uppercase tracking-wide text-ink/50">
+              {group.label}
+            </p>
+            {group.items.map((item) => {
+              const active = isNavActive(pathname, item);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setOpen(false)}
+                  aria-current={active ? "page" : undefined}
+                  className={`mb-1 flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm transition ${
+                    active
+                      ? "bg-primary/10 font-medium text-primary-dark"
+                      : "font-normal text-ink/80 hover:bg-muted hover:text-primary-dark"
+                  }`}
+                >
+                  <span className={active ? "text-primary-dark" : "text-primary"}>
+                    {ICONS[item.href]}
+                  </span>
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
 
         <div className="my-3 border-t border-line" />
 
@@ -205,9 +208,7 @@ export default function AdminShell({
           >
             <Menu size={20} />
           </button>
-          <p className="truncate text-sm text-ink/80">
-            Quản trị website CBO Sát Cánh
-          </p>
+          <Breadcrumb crumbs={crumbs} />
           <div className="ml-auto flex items-center gap-2">
             <span className="hidden items-center gap-2 rounded-full bg-muted px-3 py-1.5 text-xs font-bold text-primary-dark sm:inline-flex">
               <span className="dot-new h-2 w-2 rounded-full" /> Đang hoạt động

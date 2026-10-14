@@ -135,6 +135,24 @@ export type HeroSlide = {
   is_active: boolean;
 };
 
+/** Một mục menu trên thanh điều hướng. */
+export type HeaderNavItem = { label: string; href: string };
+
+/** Nội dung thanh điều hướng: tầng trên (địa chỉ/hotline/khẩu hiệu) và tầng dưới (menu). */
+export type HeaderContent = {
+  address: string;
+  phone: string;
+  slogan: string;
+  show_language: boolean;
+  nav: HeaderNavItem[];
+  cta_label: string;
+  cta_href: string;
+  /** Màu nền tầng trên; rỗng = dùng màu chính của bộ nhận diện. */
+  top_color: string;
+  /** Màu chữ tầng trên. */
+  top_text_color: string;
+};
+
 export type HeroContent = {
   title: string;
   subtitle: string;

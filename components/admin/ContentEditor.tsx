@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, type FormEvent, type ReactNode } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 import { saveContentSection } from "@/lib/admin/actions";
 import { submitWithToast } from "@/lib/admin/submit-with-toast";
-import { Field, PanelHead } from "./ui";
+import { Field, PanelHead, Toggle } from "./ui";
 import { SECTIONS, sectionProgress, type SectionKey } from "./content-sections";
 
 type Json = Record<string, unknown>;
@@ -77,6 +77,172 @@ function Fields({
   const text = (key: string) => String(data[key] ?? "");
 
   switch (section) {
+    case "header": {
+      const nav = asArray(data.nav);
+      const setNav = (next: Json[]) => set("nav", next);
+      const move = (from: number, to: number) => {
+        if (to < 0 || to >= nav.length) return;
+        const next = [...nav];
+        const [item] = next.splice(from, 1);
+        next.splice(to, 0, item);
+        setNav(next);
+      };
+      return (
+        <>
+          <p className="rounded-xl border border-line bg-muted px-3 py-2 text-xs text-ink/70">
+            Sửa cả tầng trên (địa chỉ, hotline, khẩu hiệu) lẫn tầng dưới (menu).
+            Để trống sẽ dùng giá trị mặc định.
+          </p>
+
+          <Field label="Địa chỉ" hint="Hiển thị bên trái tầng trên.">
+            <input className="input" value={text("address")} onChange={(e) => set("address", e.target.value)} />
+          </Field>
+
+          <Field label="Hotline" hint="Một số điện thoại, hiển thị kế bên địa chỉ.">
+            <input className="input" value={text("phone")} onChange={(e) => set("phone", e.target.value)} />
+          </Field>
+
+          <Field label="Khẩu hiệu" hint="Hiển thị bên phải tầng trên.">
+            <input className="input" value={text("slogan")} onChange={(e) => set("slogan", e.target.value)} />
+          </Field>
+
+          <div className="grid gap-4 border-t border-line pt-4 sm:grid-cols-2">
+            <Field label="Màu nền tầng trên" hint="Để trống sẽ dùng màu chính của bộ nhận diện.">
+              <span className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={text("top_color") || "#279cd7"}
+                  onChange={(e) => set("top_color", e.target.value)}
+                  className="h-11 w-14 shrink-0 cursor-pointer rounded-xl border border-line bg-white p-1"
+                />
+                <input
+                  className="input font-mono uppercase !text-sm"
+                  placeholder="Mặc định"
+                  value={text("top_color")}
+                  onChange={(e) => set("top_color", e.target.value)}
+                />
+                {text("top_color") && (
+                  <button
+                    type="button"
+                    onClick={() => set("top_color", "")}
+                    className="btn btn-ghost shrink-0 px-3 py-2 text-xs"
+                  >
+                    Mặc định
+                  </button>
+                )}
+              </span>
+            </Field>
+
+            <Field label="Màu chữ tầng trên" hint="Chọn màu tương phản với nền để dễ đọc.">
+              <span className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={text("top_text_color") || "#ffffff"}
+                  onChange={(e) => set("top_text_color", e.target.value)}
+                  className="h-11 w-14 shrink-0 cursor-pointer rounded-xl border border-line bg-white p-1"
+                />
+                <input
+                  className="input font-mono uppercase !text-sm"
+                  value={text("top_text_color")}
+                  onChange={(e) => set("top_text_color", e.target.value)}
+                />
+              </span>
+            </Field>
+          </div>
+
+          <div className="border-t border-line pt-4">
+            <p className="label">Menu tầng dưới</p>
+            <div className="space-y-3">
+              {nav.map((item, i) => (
+                <div key={i} className="grid gap-3 sm:grid-cols-[1fr,1.2fr,auto] sm:items-end">
+                  <Field label="Nhãn">
+                    <input
+                      className="input"
+                      value={String(item.label ?? "")}
+                      onChange={(e) => {
+                        const next = asArray(data.nav);
+                        next[i] = { ...item, label: e.target.value };
+                        setNav(next);
+                      }}
+                    />
+                  </Field>
+                  <Field label="Liên kết">
+                    <input
+                      className="input"
+                      placeholder="/tin-tuc hoặc /#dich-vu"
+                      value={String(item.href ?? "")}
+                      onChange={(e) => {
+                        const next = asArray(data.nav);
+                        next[i] = { ...item, href: e.target.value };
+                        setNav(next);
+                      }}
+                    />
+                  </Field>
+                  <div className="flex gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => move(i, i - 1)}
+                      disabled={i === 0}
+                      className="grid h-10 w-10 place-items-center rounded-xl border border-line text-ink/70 transition hover:bg-muted disabled:opacity-40"
+                      aria-label="Di chuyển lên"
+                    >
+                      <ArrowUp size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => move(i, i + 1)}
+                      disabled={i === nav.length - 1}
+                      className="grid h-10 w-10 place-items-center rounded-xl border border-line text-ink/70 transition hover:bg-muted disabled:opacity-40"
+                      aria-label="Di chuyển xuống"
+                    >
+                      <ArrowDown size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNav(asArray(data.nav).filter((_, j) => j !== i))}
+                      className="grid h-10 w-10 place-items-center rounded-xl border border-line text-red-500 hover:bg-red-50"
+                      aria-label="Xoá mục"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {nav.length === 0 && (
+                <p className="text-sm text-ink/80">Chưa có mục menu nào.</p>
+              )}
+              <button
+                type="button"
+                onClick={() => setNav([...asArray(data.nav), { label: "", href: "" }])}
+                className="btn btn-ghost px-4 py-2 text-xs"
+              >
+                <Plus size={15} /> Thêm mục menu
+              </button>
+            </div>
+          </div>
+
+          <div className="grid gap-4 border-t border-line pt-4 sm:grid-cols-2">
+            <Field label="Nhãn nút tầng dưới">
+              <input className="input" value={text("cta_label")} onChange={(e) => set("cta_label", e.target.value)} />
+            </Field>
+            <Field label="Liên kết nút tầng dưới">
+              <input className="input" value={text("cta_href")} onChange={(e) => set("cta_href", e.target.value)} />
+            </Field>
+          </div>
+
+          <div className="border-t border-line pt-4">
+            <Toggle
+              name="show_language"
+              label="Hiện chỗ đổi ngôn ngữ"
+              hint="Nút VI trên tầng trên (chức năng phát triển sau)."
+              checked={data.show_language !== false}
+              onChange={(v) => set("show_language", v)}
+            />
+          </div>
+        </>
+      );
+    }
+
     case "hero":
       return (
         <>

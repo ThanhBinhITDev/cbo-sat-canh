@@ -5,6 +5,7 @@ import {
   Image,
   MapPin,
   PanelBottom,
+  PanelTop,
   Phone,
   Search,
   Target,
@@ -16,6 +17,7 @@ export const SECTIONS: ReadonlyArray<{
   label: string;
   icon: LucideIcon;
 }> = [
+  { key: "header", label: "Thanh điều hướng", icon: PanelTop },
   { key: "hero", label: "Banner trang chủ", icon: Image },
   { key: "about", label: "Giới thiệu", icon: BookOpen },
   { key: "vision", label: "Tầm nhìn", icon: Eye },

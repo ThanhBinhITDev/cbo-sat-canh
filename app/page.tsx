@@ -39,7 +39,7 @@ export default async function HomePage() {
 
   return (
     <>
-      <Header contact={content.contact} logoUrl={content.brand.logoWide} />
+      <Header header={content.header} logoUrl={content.brand.logoWide} />
       <main className="flex-1">
         <Hero hero={content.hero} slides={slides} />
         <AboutSection about={content.about} id="gioi-thieu" />

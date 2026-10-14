@@ -52,8 +52,8 @@ export default async function ContactPage({
 
   return (
     <>
-      <Header contact={content.contact} logoUrl={content.brand.logoWide} />
-      <main className="flex-1 pt-[72px]">
+      <Header header={content.header} logoUrl={content.brand.logoWide} />
+      <main className="flex-1 pt-0">
         <div
           className="border-b border-line"
           style={{ background: "var(--brand-muted)" }}

@@ -196,6 +196,8 @@ export async function getPosts(options?: {
   category?: string;
   limit?: number;
   featured?: boolean;
+  /** Từ khóa tìm trong tiêu đề và tóm tắt. */
+  q?: string;
 }): Promise<PostListItem[]> {
   const supabase = await createClient();
   if (!supabase) return [];
@@ -207,6 +209,12 @@ export async function getPosts(options?: {
 
   if (options?.category) query = query.eq("category", options.category);
   if (options?.featured) query = query.eq("is_featured", true);
+
+  // Bỏ ký tự đặc biệt của bộ lọc PostgREST/ILIKE để tránh lỗi cú pháp.
+  const term = (options?.q ?? "").replace(/[%_,()*\\]/g, " ").trim().slice(0, 100);
+  if (term) {
+    query = query.or(`title.ilike.*${term}*,excerpt.ilike.*${term}*`);
+  }
 
   query = query
     .order("published_at", { ascending: false })
