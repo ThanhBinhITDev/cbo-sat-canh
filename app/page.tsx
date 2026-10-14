@@ -9,7 +9,6 @@ import TeamSection from "@/components/site/TeamSection";
 import MapContactSection from "@/components/site/MapContactSection";
 import CtaSection from "@/components/site/CtaSection";
 import FloatingContact from "@/components/site/FloatingContact";
-import ThemeSwitcher from "@/components/site/ThemeSwitcher";
 import ContactFormSection from "@/components/site/ContactFormSection";
 import { getContent } from "@/lib/settings";
 import {
@@ -64,7 +63,6 @@ export default async function HomePage() {
         address={content.contact.address}
       />
       <FloatingContact contact={content.contact} />
-      <ThemeSwitcher />
     </>
   );
 }

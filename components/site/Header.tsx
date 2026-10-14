@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { Menu, X, Phone, MapPin, Search, Globe } from "lucide-react";
 import SearchModal from "@/components/site/SearchModal";
+import ThemeSwitcher from "@/components/site/ThemeSwitcher";
 import type { HeaderContent } from "@/lib/types";
 
 export default function Header({
@@ -70,13 +71,15 @@ export default function Header({
             )}
           </div>
 
-          {/* Phải: khẩu hiệu + chỗ đổi ngôn ngữ (phát triển sau). */}
+          {/* Phải: khẩu hiệu + tùy chỉnh màu + chỗ đổi ngôn ngữ. */}
           <div className="ml-auto flex shrink-0 items-center gap-3 sm:gap-4">
             {header.slogan && (
               <p className="hidden text-right font-normal italic opacity-90 lg:block">
                 {header.slogan}
               </p>
             )}
+
+            <ThemeSwitcher />
 
             {header.show_language && (
               <button
@@ -227,6 +230,10 @@ export default function Header({
             </nav>
 
             <div className="shrink-0 border-t border-line p-4">
+              {/* Điện thoại (<640px): tầng trên navbar bị ẩn nên đưa nút đổi màu vào đây. */}
+              <div className="mb-3 sm:hidden">
+                <ThemeSwitcher variant="menu" />
+              </div>
               {phone && (
                 <a
                   href={`tel:${phone.replace(/\D/g, "")}`}

@@ -8,7 +8,6 @@ import { ArrowLeft, CalendarDays, UserRound } from "lucide-react";
 import { FacebookIcon } from "@/components/site/BrandIcons";
 import Header from "@/components/site/Header";
 import Footer from "@/components/site/Footer";
-import ThemeSwitcher from "@/components/site/ThemeSwitcher";
 import FloatingContact from "@/components/site/FloatingContact";
 import PostCard from "@/components/site/PostCard";
 import { getPostBySlug, getPosts } from "@/lib/content";
@@ -192,7 +191,6 @@ export default async function PostPage({ params }: PageProps<"/tin-tuc/[slug]">)
         address={content.contact.address}
       />
       <FloatingContact contact={content.contact} />
-      <ThemeSwitcher />
     </>
   );
 }

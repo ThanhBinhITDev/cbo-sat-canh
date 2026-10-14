@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import { Palette, RotateCcw, Check } from "lucide-react";
 import { DEFAULT_THEME, THEME_PRESETS, type Theme } from "@/lib/theme";
 
@@ -62,11 +63,22 @@ const readOverride = (): string | null => {
 
 const subscribeMounted = () => () => {};
 
-/** Khách tự chỉnh màu — lưu trên máy họ (localStorage). */
-export default function ThemeSwitcher() {
+type Pos = { right: number; top?: number; bottom?: number };
+
+/** Khách tự chỉnh màu — lưu trên máy họ (localStorage).
+ *  `variant="bar"`: nút gọn trong tầng trên navbar.
+ *  `variant="menu"`: nút rộng trong menu trượt (điện thoại).
+ *  Bảng điều khiển render qua portal, tự chọn mở xuống hay mở lên cho vừa màn hình. */
+export default function ThemeSwitcher({
+  variant = "bar",
+}: {
+  variant?: "bar" | "menu";
+}) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<Theme | null>(null);
   const [saved, setSaved] = useState(false);
+  const [pos, setPos] = useState<Pos | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
   // Giá trị nhị phân: false khi SSR/hydration, true sau khi gắn xong.
@@ -99,15 +111,52 @@ export default function ThemeSwitcher() {
 
   const theme = draft ?? storedTheme ?? base;
 
+  const placePanel = () => {
+    const r = triggerRef.current?.getBoundingClientRect();
+    if (!r) return;
+    const vw = document.documentElement.clientWidth;
+    const vh = document.documentElement.clientHeight;
+    const gap = 8;
+    const estH = Math.min(vh * 0.7, 460) + gap;
+    const spaceBelow = vh - r.bottom;
+    const openUp = spaceBelow < estH && r.top > spaceBelow;
+    setPos({
+      right: vw - r.right,
+      ...(openUp ? { bottom: vh - r.top + gap } : { top: r.bottom + gap }),
+    });
+  };
+
+  const toggle = () => {
+    if (open) {
+      setOpen(false);
+      return;
+    }
+    placePanel();
+    setOpen(true);
+  };
+
   useEffect(() => {
-    const onClick = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (triggerRef.current?.contains(t) || panelRef.current?.contains(t)) return;
+      setOpen(false);
     };
-    document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
-  }, []);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    const reposition = () => placePanel();
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    window.addEventListener("resize", reposition);
+    window.addEventListener("scroll", reposition, true);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+      window.removeEventListener("resize", reposition);
+      window.removeEventListener("scroll", reposition, true);
+    };
+  }, [open]);
 
   const update = (patch: Partial<Theme>) => {
     setSaved(false);
@@ -131,114 +180,146 @@ export default function ThemeSwitcher() {
     window.setTimeout(() => setSaved(false), 2500);
   };
 
-  return (
-    <div className="fixed bottom-20 left-4 z-40 md:bottom-6" ref={panelRef}>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        aria-label="Tùy chỉnh giao diện"
-        className="flex h-12 items-center gap-2 rounded-full border border-line bg-surface px-4 text-sm font-bold text-primary-dark shadow-lg transition hover:border-primary"
+  const panel =
+    mounted && open && pos ? (
+      <div
+        ref={panelRef}
+        style={{
+          position: "fixed",
+          right: pos.right,
+          zIndex: 50,
+          ...(pos.top != null ? { top: pos.top } : { bottom: pos.bottom }),
+        }}
+        className="max-h-[70vh] w-[19rem] max-w-[calc(100vw-2rem)] overflow-y-auto rounded-2xl border border-line bg-surface p-4 text-ink shadow-2xl"
       >
-        <Palette size={18} /> Màu sắc
-      </button>
+        <p className="mb-3 text-sm font-bold text-primary-dark">
+          Tùy chỉnh giao diện
+        </p>
 
-      {open && (
-        <div className="absolute bottom-16 left-0 w-[19rem] max-h-[70vh] overflow-y-auto rounded-2xl border border-line bg-surface p-4 shadow-2xl">
-          <p className="mb-3 text-sm font-bold text-primary-dark">
-            Tùy chỉnh giao diện
-          </p>
-
-          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-ink/60">
-            Mẫu có sẵn
-          </p>
-          <div className="mb-4 grid grid-cols-2 gap-2">
-            {THEME_PRESETS.map((preset) => (
-              <button
-                key={preset.name}
-                type="button"
-                onClick={() => update(preset.theme)}
-                className="flex items-center gap-2 rounded-xl border border-line p-2 text-left text-xs font-medium transition hover:border-primary"
-              >
-                <span
-                  className="h-6 w-6 shrink-0 rounded-md"
-                  style={{ background: preset.theme.primary }}
-                />
-                <span className="leading-tight">{preset.name}</span>
-              </button>
-            ))}
-          </div>
-
-          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-ink/60">
-            Tự chọn
-          </p>
-          <div className="space-y-2">
-            {FIELDS.map((field) => (
-              <label
-                key={field.key}
-                className="flex items-center justify-between gap-3 text-sm"
-              >
-                <span>{field.label}</span>
-                <input
-                  type="color"
-                  value={theme[field.key]}
-                  onChange={(e) => update({ [field.key]: e.target.value } as Partial<Theme>)}
-                  className="h-8 w-12 cursor-pointer rounded border border-line bg-transparent p-0"
-                  aria-label={field.label}
-                />
-              </label>
-            ))}
-
-            <label className="block text-sm">
-              <span className="flex justify-between">
-                Bo góc <b>{theme.radius}px</b>
-              </span>
-              <input
-                type="range"
-                min={0}
-                max={32}
-                value={theme.radius}
-                onChange={(e) => update({ radius: Number(e.target.value) })}
-                className="w-full accent-[var(--brand-primary)]"
-              />
-            </label>
-
-            <label className="block text-sm">
-              <span className="flex justify-between">
-                Cỡ chữ <b>{Math.round(theme.fontScale * 100)}%</b>
-              </span>
-              <input
-                type="range"
-                min={0.9}
-                max={1.2}
-                step={0.05}
-                value={theme.fontScale}
-                onChange={(e) => update({ fontScale: Number(e.target.value) })}
-                className="w-full accent-[var(--brand-primary)]"
-              />
-            </label>
-          </div>
-
-          <div className="mt-4 flex gap-2">
-            <button type="button" onClick={save} className="btn btn-primary flex-1 !py-2 !text-sm">
-              {saved ? <Check size={16} /> : null}
-              {saved ? "Đã lưu" : "Lưu trên máy"}
-            </button>
+        <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-ink/60">
+          Mẫu có sẵn
+        </p>
+        <div className="mb-4 grid grid-cols-2 gap-2">
+          {THEME_PRESETS.map((preset) => (
             <button
+              key={preset.name}
               type="button"
-              onClick={restore}
-              className="btn btn-ghost !px-3 !py-2"
-              title="Khôi phục màu mặc định"
+              onClick={() => update(preset.theme)}
+              className="flex items-center gap-2 rounded-xl border border-line p-2 text-left text-xs font-medium transition hover:border-primary"
             >
-              <RotateCcw size={16} />
+              <span
+                className="h-6 w-6 shrink-0 rounded-md"
+                style={{ background: preset.theme.primary }}
+              />
+              <span className="leading-tight">{preset.name}</span>
             </button>
-          </div>
-          <p className="mt-2 text-[0.72rem] leading-snug text-ink/60">
-            Màu bạn chọn chỉ áp dụng trên máy này. Muốn đổi cho toàn bộ trang,
-            quản trị viên vào mục <b>Giao diện</b> trong trang quản trị.
-          </p>
+          ))}
         </div>
+
+        <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-ink/60">
+          Tự chọn
+        </p>
+        <div className="space-y-2">
+          {FIELDS.map((field) => (
+            <label
+              key={field.key}
+              className="flex items-center justify-between gap-3 text-sm"
+            >
+              <span>{field.label}</span>
+              <input
+                type="color"
+                value={theme[field.key]}
+                onChange={(e) => update({ [field.key]: e.target.value } as Partial<Theme>)}
+                className="h-8 w-12 cursor-pointer rounded border border-line bg-transparent p-0"
+                aria-label={field.label}
+              />
+            </label>
+          ))}
+
+          <label className="block text-sm">
+            <span className="flex justify-between">
+              Bo góc <b>{theme.radius}px</b>
+            </span>
+            <input
+              type="range"
+              min={0}
+              max={32}
+              value={theme.radius}
+              onChange={(e) => update({ radius: Number(e.target.value) })}
+              className="w-full accent-[var(--brand-primary)]"
+            />
+          </label>
+
+          <label className="block text-sm">
+            <span className="flex justify-between">
+              Cỡ chữ <b>{Math.round(theme.fontScale * 100)}%</b>
+            </span>
+            <input
+              type="range"
+              min={0.9}
+              max={1.2}
+              step={0.05}
+              value={theme.fontScale}
+              onChange={(e) => update({ fontScale: Number(e.target.value) })}
+              className="w-full accent-[var(--brand-primary)]"
+            />
+          </label>
+        </div>
+
+        <div className="mt-4 flex gap-2">
+          <button type="button" onClick={save} className="btn btn-primary flex-1 !py-2 !text-sm">
+            {saved ? <Check size={16} /> : null}
+            {saved ? "Đã lưu" : "Lưu trên máy"}
+          </button>
+          <button
+            type="button"
+            onClick={restore}
+            className="btn btn-ghost !px-3 !py-2"
+            title="Khôi phục màu mặc định"
+          >
+            <RotateCcw size={16} />
+          </button>
+        </div>
+        <p className="mt-2 text-[0.72rem] leading-snug text-ink/60">
+          Màu bạn chọn chỉ áp dụng trên máy này. Muốn đổi cho toàn bộ trang,
+          quản trị viên vào mục <b>Giao diện</b> trong trang quản trị.
+        </p>
+      </div>
+    ) : null;
+
+  return (
+    <>
+      {variant === "menu" ? (
+        <button
+          ref={triggerRef}
+          type="button"
+          onClick={toggle}
+          aria-expanded={open}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-line px-4 py-3 text-sm font-semibold text-ink transition hover:border-primary hover:text-primary-dark"
+        >
+          <Palette size={17} aria-hidden />
+          <span>Tùy chỉnh màu sắc</span>
+        </button>
+      ) : (
+        <button
+          ref={triggerRef}
+          type="button"
+          onClick={toggle}
+          aria-expanded={open}
+          aria-label="Tùy chỉnh giao diện"
+          title="Tùy chỉnh giao diện"
+          style={{
+            borderColor: "currentColor",
+            backgroundColor: "color-mix(in srgb, currentColor 14%, transparent)",
+          }}
+          className="flex items-center gap-1.5 rounded-md border px-2 py-0.5 font-medium opacity-90 transition hover:opacity-100"
+        >
+          <Palette size={13} aria-hidden />
+          <span>Màu sắc</span>
+        </button>
       )}
-    </div>
+
+      {panel ? createPortal(panel, document.body) : null}
+    </>
   );
 }

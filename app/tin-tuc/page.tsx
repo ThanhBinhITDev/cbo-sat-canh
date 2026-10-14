@@ -3,7 +3,6 @@ import Link from "next/link";
 import { Newspaper } from "lucide-react";
 import Header from "@/components/site/Header";
 import Footer from "@/components/site/Footer";
-import ThemeSwitcher from "@/components/site/ThemeSwitcher";
 import FloatingContact from "@/components/site/FloatingContact";
 import PostCard from "@/components/site/PostCard";
 import { getPosts } from "@/lib/content";
@@ -148,7 +147,6 @@ export default async function NewsPage({
         address={content.contact.address}
       />
       <FloatingContact contact={content.contact} />
-      <ThemeSwitcher />
     </>
   );
 }

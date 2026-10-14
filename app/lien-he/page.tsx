@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Header from "@/components/site/Header";
 import Footer from "@/components/site/Footer";
-import ThemeSwitcher from "@/components/site/ThemeSwitcher";
 import FloatingContact from "@/components/site/FloatingContact";
 import ContactForm from "@/components/site/ContactForm";
 import MapContactSection from "@/components/site/MapContactSection";
@@ -164,7 +163,6 @@ export default async function ContactPage({
         address={content.contact.address}
       />
       <FloatingContact contact={content.contact} />
-      <ThemeSwitcher />
     </>
   );
 }
