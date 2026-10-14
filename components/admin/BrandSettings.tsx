@@ -154,7 +154,7 @@ export default function BrandSettings({ initial }: Props) {
   }));
 
   return (
-    <form action={saveBrand} className="card p-5">
+    <form action={saveBrand} data-loading-mode="toast" className="card p-5">
       <div className="mb-1 flex items-center gap-2">
         <ImagePlus size={18} className="text-primary" />
         <h2 className="text-base font-bold">Thương hiệu — Logo &amp; Favicon</h2>

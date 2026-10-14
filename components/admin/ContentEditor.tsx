@@ -36,7 +36,7 @@ export default function ContentEditor({ section, initial }: Props) {
         }
       />
 
-      <form action={saveContentSection} className="flex flex-col">
+      <form action={saveContentSection} data-loading-mode="toast" className="flex flex-col">
         <input type="hidden" name="section" value={section} />
         <input type="hidden" name="payload" value={JSON.stringify(data)} />
 

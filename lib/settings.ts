@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { DEFAULT_HOTLINE, SITE_URL } from "@/lib/env";
 import { normalizeBrand } from "@/lib/brand";
+import { normalizeLoader } from "@/lib/loader";
 import type {
   AboutContent,
   ContactInfo,
@@ -153,6 +154,7 @@ export async function getContent() {
     footer: pick(DEFAULT_FOOTER, DEFAULT_FOOTER),
     seo: pick(s.seo, DEFAULT_SEO),
     brand: normalizeBrand(s.brand),
+    loader: normalizeLoader(s.loader),
   };
 }
 

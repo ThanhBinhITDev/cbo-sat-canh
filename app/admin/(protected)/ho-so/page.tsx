@@ -44,7 +44,7 @@ export default async function ProfilePage({
               fullName={p.full_name || user.email}
             />
 
-            <form action={updateMyProfile} className="space-y-4">
+            <form action={updateMyProfile} data-loading-mode="toast" className="space-y-4">
               <input
                 type="hidden"
                 name="original_username"
@@ -90,7 +90,7 @@ export default async function ProfilePage({
               action={<Mail size={18} className="text-primary" />}
             />
             <div className="p-5">
-              <form action={changeMyEmail} className="space-y-4">
+              <form action={changeMyEmail} data-loading-mode="toast" className="space-y-4">
                 <Field
                   label="Email mới"
                   hint="Hệ thống gửi link xác nhận tới email mới — vẫn đăng nhập bằng email cũ cho đến khi bạn bấm link."
@@ -119,7 +119,7 @@ export default async function ProfilePage({
               subtitle="Đổi mật khẩu đăng nhập"
               action={<KeyRound size={18} className="text-primary" />}
             />
-            <form action={changeMyPassword} className="space-y-4 p-5">
+            <form action={changeMyPassword} data-loading-mode="toast" className="space-y-4 p-5">
               <Field label="Mật khẩu mới" required hint="Tối thiểu 8 ký tự.">
                 <input
                   name="password"

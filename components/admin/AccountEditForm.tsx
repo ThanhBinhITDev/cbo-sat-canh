@@ -3,6 +3,8 @@
 import { useActionState } from "react";
 import { Loader2, Save, UserCog } from "lucide-react";
 import { updateAccountProfile, type ActionState } from "@/lib/admin/actions";
+import { useGlobalLoading } from "@/lib/loading";
+import { useToastLoading, useToastResult } from "@/hooks/use-toast-loading";
 import { ROLE_LABELS, type Profile } from "@/lib/types";
 import { Field } from "./ui";
 import AvatarPicker from "./AvatarPicker";
@@ -12,9 +14,12 @@ export default function AccountEditForm({ profile }: { profile: Profile }) {
     updateAccountProfile,
     null,
   );
+  useGlobalLoading(pending);
+  useToastLoading(pending, { loading: "Đang cập nhật thông tin tài khoản..." });
+  useToastResult(state);
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form action={formAction} data-loading-mode="toast" className="space-y-4">
       <input type="hidden" name="id" value={profile.id} />
       <input
         type="hidden"

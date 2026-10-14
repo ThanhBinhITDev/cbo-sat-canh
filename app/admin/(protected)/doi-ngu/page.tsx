@@ -125,7 +125,7 @@ export default async function TeamAdminPage({
                 title={editing ? "Sửa thành viên" : "Thêm thành viên"}
                 subtitle="Ảnh đại diện nên là ảnh vuông"
               />
-              <form action={saveTeamMember} className="space-y-4 p-5">
+              <form action={saveTeamMember} data-loading-mode="toast" className="space-y-4 p-5">
                 {editing && <input type="hidden" name="id" value={editing.id} />}
 
                 <Field label="Họ và tên" required>

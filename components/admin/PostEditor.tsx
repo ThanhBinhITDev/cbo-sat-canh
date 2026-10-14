@@ -17,6 +17,8 @@ import {
   Save,
 } from "lucide-react";
 import { savePost, type ActionState } from "@/lib/admin/actions";
+import { useGlobalLoading } from "@/lib/loading";
+import { useToastLoading, useToastResult } from "@/hooks/use-toast-loading";
 import { slugify } from "@/lib/slug";
 import { CATEGORY_LABELS, type Post } from "@/lib/types";
 import { BackLink, Field } from "./ui";
@@ -39,6 +41,9 @@ export default function PostEditor({ post }: Props) {
     savePost,
     null,
   );
+  useGlobalLoading(pending);
+  useToastLoading(pending, { loading: "Đang lưu bài viết..." });
+  useToastResult(state);
 
   const [title, setTitle] = useState(post?.title ?? "");
   const [slug, setSlug] = useState(post?.slug ?? "");
@@ -84,7 +89,7 @@ export default function PostEditor({ post }: Props) {
         </p>
       )}
 
-      <form action={formAction} className="mt-5 grid gap-5 lg:grid-cols-[1.6fr,1fr]">
+      <form action={formAction} data-loading-mode="toast" className="mt-5 grid gap-5 lg:grid-cols-[1.6fr,1fr]">
         {post && <input type="hidden" name="id" value={post.id} />}
         <input type="hidden" name="back" value="/admin/bai-viet" />
 

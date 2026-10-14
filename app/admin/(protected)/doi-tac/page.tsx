@@ -207,7 +207,7 @@ export default async function PartnersAdminPage({
                 title={editingGroup ? "Sửa nhóm đối tác" : "Thêm nhóm đối tác"}
                 subtitle="Tên hiển thị ở tab; tiêu đề hiển thị ở trang khách"
               />
-              <form action={savePartnerGroup} className="space-y-4 p-5">
+              <form action={savePartnerGroup} data-loading-mode="toast" className="space-y-4 p-5">
                 {editingGroup && (
                   <input type="hidden" name="original" value={editingGroup.key} />
                 )}
@@ -290,7 +290,7 @@ export default async function PartnersAdminPage({
                 title={editing ? "Sửa đối tác" : "Thêm đối tác"}
                 subtitle="Logo nên là ảnh vuông nền trong suốt (PNG)"
               />
-              <form action={savePartner} className="space-y-4 p-5">
+              <form action={savePartner} data-loading-mode="toast" className="space-y-4 p-5">
                 {editing && <input type="hidden" name="id" value={editing.id} />}
 
                 <Field label="Tên đối tác" required>

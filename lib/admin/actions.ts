@@ -19,6 +19,13 @@ import {
   validateBrandImageFile,
   type Brand,
 } from "@/lib/brand";
+import {
+  loaderImageUrl,
+  loaderPath,
+  normalizeLoader,
+  validateLoaderFile,
+  type LoaderConfig,
+} from "@/lib/loader";
 import { storagePathFromPublicUrl } from "@/lib/avatar";
 import type {
   ContactStatus,
@@ -633,6 +640,85 @@ export async function saveBrand(formData: FormData) {
   }
 
   await saveSetting("brand", next, path);
+}
+
+/* ------------------------------------------------------------------ *
+ * Màn hình chờ (Loader)
+ * ------------------------------------------------------------------ */
+
+export async function saveLoader(formData: FormData) {
+  const path = "/admin/giao-dien";
+  try {
+    await requireRole(["admin"]);
+  } catch (e) {
+    guard(e, path);
+  }
+  await assertWritable(path);
+
+  const admin = createAdminClient();
+  if (!admin) fail(path, "Thiếu SUPABASE_SECRET_KEY trong .env.local nên không upload được ảnh.");
+
+  const current = normalizeLoader((await getSettings()).loader);
+
+  const fileValue = formData.get("imageFile");
+  const file = fileValue instanceof File && fileValue.size > 0 ? fileValue : null;
+  if (file) {
+    const err = validateLoaderFile(file);
+    if (err) fail(path, `Ảnh loader: ${err}`);
+  }
+
+  const clear = bool(formData.get("clearImage"));
+  const url = str(formData.get("imageUrl"), 2000);
+
+  let pendingUpload = false;
+  let imageUrl: string | null;
+  if (file) {
+    imageUrl = null;
+    pendingUpload = true;
+  } else if (clear) {
+    imageUrl = null;
+  } else if (url.trim()) {
+    imageUrl = loaderImageUrl(url);
+    if (!imageUrl) fail(path, "Ảnh phải là link http/https hoặc đường dẫn bắt đầu bằng /.");
+  } else {
+    imageUrl = current.imageUrl;
+  }
+
+  const bg = str(formData.get("background"));
+  const background =
+    bool(formData.get("customBackground")) && /^#[0-9a-fA-F]{6}$/.test(bg.trim())
+      ? bg.trim()
+      : null;
+
+  const next: LoaderConfig = {
+    enabled: bool(formData.get("enabled")),
+    imageUrl,
+    background,
+    minDurationMs: Math.min(5000, Math.max(0, num(formData.get("minDurationMs"), 600))),
+    oncePerSession: bool(formData.get("oncePerSession")),
+    showText: bool(formData.get("showText")),
+    text: str(formData.get("text"), 120).replace(/\s+/g, " ").trim(),
+  };
+
+  // Upload ảnh mới (nếu có). Lỗi thì dừng, chưa ghi setting.
+  if (file && pendingUpload) {
+    const key = loaderPath(file.name);
+    const { error: up } = await admin.storage
+      .from("site-assets")
+      .upload(key, file, { cacheControl: "3600", upsert: false });
+    if (up) fail(path, `Không upload được ảnh: ${up.message}`);
+    const { data: pub } = admin.storage.from("site-assets").getPublicUrl(key);
+    next.imageUrl = pub.publicUrl;
+  }
+
+  // Dọn object cũ trong site-assets khi bị thay hoặc bỏ.
+  const oldUrl = current.imageUrl;
+  if (oldUrl && oldUrl !== next.imageUrl) {
+    const oldKey = storagePathFromPublicUrl(oldUrl);
+    if (oldKey) await admin.storage.from("site-assets").remove([oldKey]);
+  }
+
+  await saveSetting("loader", next, path);
 }
 
 /* ------------------------------------------------------------------ *

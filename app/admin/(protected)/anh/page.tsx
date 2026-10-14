@@ -132,7 +132,7 @@ export default async function MediaAdminPage({
                       />
                     </div>
 
-                    <form action={saveMediaMeta} className="space-y-4">
+                    <form action={saveMediaMeta} data-loading-mode="toast" className="space-y-4">
                       <input type="hidden" name="id" value={selected.id} />
                       <input
                         type="hidden"

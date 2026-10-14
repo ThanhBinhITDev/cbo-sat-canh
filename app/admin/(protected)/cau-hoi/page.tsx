@@ -221,7 +221,7 @@ export default async function ContactMessagesPage({
                         <p className="label">Cập nhật trạng thái</p>
                         <div className="grid gap-2 sm:grid-cols-3">
                           {(["new", "replied", "archived"] as ContactStatus[]).map((value) => (
-                            <form key={value} action={updateContactStatus}>
+                            <form key={value} action={updateContactStatus} data-loading-mode="toast">
                               <input type="hidden" name="id" value={selected.id} />
                               <input type="hidden" name="status" value={value} />
                               <button

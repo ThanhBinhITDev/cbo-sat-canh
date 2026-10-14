@@ -86,7 +86,7 @@ export default async function NewsletterAdminPage({
                       {canManage && (
                         <td>
                           <div className="flex justify-end gap-2">
-                            <form action={toggleNewsletter}>
+                            <form action={toggleNewsletter} data-loading-mode="none">
                               <input type="hidden" name="id" value={row.id} />
                               <input type="hidden" name="is_active" value={String(row.is_active)} />
                               <button

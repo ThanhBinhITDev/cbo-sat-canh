@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Mail, Loader2, CheckCircle2 } from "lucide-react";
+import toast from "react-hot-toast";
 
 export default function NewsletterForm({ source = "footer" }: { source?: string }) {
   const [email, setEmail] = useState("");
@@ -19,6 +20,7 @@ export default function NewsletterForm({ source = "footer" }: { source?: string 
     }
 
     setStatus("loading");
+    const t = toast.loading("Đang đăng ký...");
     try {
       const res = await fetch("/api/newsletter", {
         method: "POST",
@@ -29,17 +31,17 @@ export default function NewsletterForm({ source = "footer" }: { source?: string 
       if (!res.ok) throw new Error(data?.message ?? "Không đăng ký được.");
 
       setStatus("ok");
-      setText(
-        data?.duplicate
-          ? "Bạn đã đăng ký nhận tin rồi. Cảm ơn bạn!"
-          : "Đăng ký thành công. Cảm ơn bạn đã đồng hành!",
-      );
+      const okMsg = data?.duplicate
+        ? "Bạn đã đăng ký nhận tin rồi. Cảm ơn bạn!"
+        : "Đăng ký thành công. Cảm ơn bạn đã đồng hành!";
+      setText(okMsg);
+      toast.success(okMsg, { id: t });
       setEmail("");
     } catch (err) {
       setStatus("error");
-      setText(
-        err instanceof Error ? err.message : "Có lỗi xảy ra, vui lòng thử lại.",
-      );
+      const errMsg = err instanceof Error ? err.message : "Có lỗi xảy ra, vui lòng thử lại.";
+      setText(errMsg);
+      toast.error(errMsg, { id: t });
     }
   }
 

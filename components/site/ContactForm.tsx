@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Send, Loader2, CheckCircle2, AlertCircle, MessageCircle } from "lucide-react";
+import toast from "react-hot-toast";
 import { SERVICE_OPTIONS } from "@/lib/types";
 import type { ContactInfo } from "@/lib/types";
 
@@ -55,6 +56,7 @@ export default function ContactForm({
 
     setState("sending");
     setMessage("");
+    const t = toast.loading("Đang gửi liên hệ...");
 
     try {
       const controller = new AbortController();
@@ -75,17 +77,19 @@ export default function ContactForm({
       }
 
       setState("ok");
-      setMessage("Đã gửi. Chúng tôi sẽ liên hệ với bạn sớm nhất.");
+      const okMsg = "Đã gửi. Chúng tôi sẽ liên hệ với bạn sớm nhất.";
+      setMessage(okMsg);
+      toast.success(okMsg, { id: t });
       form.reset();
-      setCooldown(true);
       window.setTimeout(() => setCooldown(false), 20_000);
     } catch (err) {
       setState("error");
-      setMessage(
+      const errMsg =
         err instanceof Error && err.message
           ? err.message
-          : "Có lỗi xảy ra. Vui lòng thử lại hoặc gọi 0967.206.095.",
-      );
+          : "Có lỗi xảy ra. Vui lòng thử lại hoặc gọi 0967.206.095.";
+      setMessage(errMsg);
+      toast.error(errMsg, { id: t });
     }
   }
 

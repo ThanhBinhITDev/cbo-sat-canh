@@ -128,7 +128,7 @@ export default async function ServicesAdminPage({
                 title={editing ? "Sửa dịch vụ" : "Thêm dịch vụ"}
                 subtitle={editing ? "Cập nhật thông tin và thứ tự" : "Điền thông tin rồi bấm Lưu"}
               />
-              <form action={saveService} className="space-y-4 p-5">
+              <form action={saveService} data-loading-mode="toast" className="space-y-4 p-5">
                 {editing && <input type="hidden" name="id" value={editing.id} />}
 
                 <Field label="Tên dịch vụ" required>

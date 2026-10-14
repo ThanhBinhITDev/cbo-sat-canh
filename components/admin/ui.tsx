@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import type { ChangeEvent, ReactNode } from "react";
 import { CheckCircle2, AlertTriangle, Inbox } from "lucide-react";
 
 export function PageHeader({
@@ -127,6 +127,61 @@ export function Field({
       </span>
       {children}
       {hint && <span className="hint">{hint}</span>}
+    </label>
+  );
+}
+
+/**
+ * Ô gạt bật/tắt (thay cho checkbox). Dùng uncontrolled mặc định
+ * (`defaultChecked`); truyền `checked` + `onChange` để điều khiển.
+ */
+export function Toggle({
+  name,
+  label,
+  hint,
+  icon,
+  defaultChecked,
+  checked,
+  onChange,
+  disabled,
+  className = "",
+}: {
+  name: string;
+  label: string;
+  hint?: ReactNode;
+  icon?: ReactNode;
+  defaultChecked?: boolean;
+  checked?: boolean;
+  onChange?: (checked: boolean) => void;
+  disabled?: boolean;
+  className?: string;
+}) {
+  return (
+    <label
+      className={`flex items-center justify-between gap-4 rounded-xl border border-line bg-surface px-4 py-3 transition ${
+        disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:border-primary/50"
+      } ${className}`}
+    >
+      <span className="min-w-0">
+        <span className="flex items-center gap-2 text-sm font-semibold text-ink">
+          {icon}
+          {label}
+        </span>
+        {hint && <span className="mt-0.5 block text-xs font-normal text-ink/55">{hint}</span>}
+      </span>
+      <span className="relative inline-flex h-6 w-11 shrink-0 items-center">
+        <input
+          type="checkbox"
+          name={name}
+          disabled={disabled}
+          {...(checked === undefined
+            ? { defaultChecked }
+            : { checked, onChange: (e: ChangeEvent<HTMLInputElement>) => onChange?.(e.target.checked) })}
+          className="peer sr-only"
+        />
+        <span className="absolute inset-0 rounded-full bg-line transition-colors peer-checked:bg-primary peer-focus-visible:ring-2 peer-focus-visible:ring-primary/40 peer-focus-visible:ring-offset-2 peer-disabled:cursor-not-allowed" />
+        <span className="absolute left-0.5 z-10 h-5 w-5 rounded-full bg-surface shadow transition-transform peer-checked:translate-x-5" />
+      </span>
     </label>
   );
 }

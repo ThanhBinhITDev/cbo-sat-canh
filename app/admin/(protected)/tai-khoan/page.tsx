@@ -121,7 +121,7 @@ export default async function AccountsPage({
                                 {ROLE_LABELS[row.role]}
                               </span>
                             ) : (
-                              <form action={updateAccountRole} className="flex items-center gap-2">
+                              <form action={updateAccountRole} data-loading-mode="toast" className="flex items-center gap-2">
                                 <input type="hidden" name="id" value={row.id} />
                                 <select
                                   name="role"
@@ -160,7 +160,7 @@ export default async function AccountsPage({
                                 <Pencil size={13} /> Sửa
                               </Link>
                               {!isSelf && (
-                                <form action={toggleAccountActive}>
+                                <form action={toggleAccountActive} data-loading-mode="none">
                                   <input type="hidden" name="id" value={row.id} />
                                   <input type="hidden" name="is_active" value={String(row.is_active)} />
                                   <ConfirmSubmit

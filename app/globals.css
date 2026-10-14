@@ -110,6 +110,11 @@
   letter-spacing: -0.02em;
 }
 
+/* Ẩn splash khi loader đã từng hiện trong phiên (script boot gắn data-loader-skip). */
+html[data-loader-skip] #site-loader {
+  display: none;
+}
+
 .section-kicker {
   display: inline-block;
   font-size: 0.8125rem;

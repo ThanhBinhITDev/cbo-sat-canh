@@ -2,9 +2,11 @@ import { Palette, MonitorSmartphone } from "lucide-react";
 import { Flash, PageHeader } from "@/components/admin/ui";
 import ThemeEditor from "@/components/admin/ThemeEditor";
 import BrandSettings from "@/components/admin/BrandSettings";
+import LoaderSettings from "@/components/admin/LoaderSettings";
 import { getSettings } from "@/lib/settings";
 import { normalizeTheme } from "@/lib/theme";
 import { normalizeBrand } from "@/lib/brand";
+import { normalizeLoader } from "@/lib/loader";
 
 export default async function ThemeAdminPage({
   searchParams,
@@ -13,15 +15,16 @@ export default async function ThemeAdminPage({
   const settings = await getSettings();
   const theme = normalizeTheme(settings.theme);
   const brand = normalizeBrand(settings.brand);
+  const loader = normalizeLoader(settings.loader);
 
   return (
     <>
       <PageHeader
         title="Giao diện"
-        description="Đổi màu nhận diện áp dụng cho toàn bộ trang khách. Khách vẫn có thể tự chọn giao diện yêu thích ở nút bên phải màn hình."
+        description="Đổi màu nhận diện, cài đặt màn hình chờ và thông báo toast áp dụng cho toàn bộ website."
         action={
           <span className="inline-flex items-center gap-1.5 rounded-xl bg-muted px-3 py-2 text-xs font-bold text-ink/60">
-            <MonitorSmartphone size={15} /> 3 lớp giao diện
+            <MonitorSmartphone size={15} /> Cài đặt giao diện
           </span>
         }
       />
@@ -35,12 +38,13 @@ export default async function ThemeAdminPage({
         <Palette size={18} className="mt-0.5 shrink-0 text-blue-600" />
         <p>
           <b>Thứ tự ưu tiên:</b> màu mặc định (mã nguồn) → màu admin lưu tại đây →
-          giao diện khách tự chọn (localStorage). Khi admin lưu màu mới, mọi khách
-          chưa tự chọn giao diện sẽ thấy màu mới ngay.
+          giao diện khách tự chọn (localStorage).
         </p>
       </div>
 
       <BrandSettings key={JSON.stringify(brand)} initial={brand} />
+      <div className="mt-5" />
+      <LoaderSettings key={JSON.stringify(loader)} initial={loader} />
       <div className="mt-5" />
       <ThemeEditor initial={theme} />
     </>

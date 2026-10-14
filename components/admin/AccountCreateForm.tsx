@@ -3,6 +3,8 @@
 import { useActionState } from "react";
 import { Loader2, UserPlus, ShieldCheck } from "lucide-react";
 import { createAccount, type ActionState } from "@/lib/admin/actions";
+import { useGlobalLoading } from "@/lib/loading";
+import { useToastLoading, useToastResult } from "@/hooks/use-toast-loading";
 import { ROLE_LABELS, type Role } from "@/lib/types";
 import { Field } from "./ui";
 
@@ -11,9 +13,12 @@ export default function AccountCreateForm() {
     createAccount,
     null,
   );
+  useGlobalLoading(pending);
+  useToastLoading(pending, { loading: "Đang tạo tài khoản..." });
+  useToastResult(state);
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form action={formAction} data-loading-mode="toast" className="space-y-4">
       <Field label="Họ và tên" required>
         <input name="full_name" required maxLength={150} className="input" placeholder="Nguyễn Văn A" />
       </Field>

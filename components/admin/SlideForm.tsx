@@ -69,7 +69,7 @@ export default function SlideForm({
 
   return (
     <>
-      <form action={submit} className="space-y-4 p-5">
+      <form action={submit} data-loading-mode="toast" className="space-y-4 p-5">
         {editing && <input type="hidden" name="id" value={editing.id} />}
 
         <Field

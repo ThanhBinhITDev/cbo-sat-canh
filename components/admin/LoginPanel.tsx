@@ -1,13 +1,22 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Loader2, ShieldAlert, ArrowLeft } from "lucide-react";
 import { signIn } from "@/app/admin/actions";
+import toast from "react-hot-toast";
+import { useToastLoading } from "@/hooks/use-toast-loading";
 
 export default function LoginPanel({ logoSquareUrl }: { logoSquareUrl?: string | null }) {
   const [state, formAction, pending] = useActionState(signIn, null);
+  useToastLoading(pending, { loading: "Đang đăng nhập..." });
+
+  useEffect(() => {
+    if (state?.error) {
+      toast.error(state.error, { duration: 5000 });
+    }
+  }, [state]);
 
   return (
     <main className="grid min-h-screen place-items-center bg-muted px-5 py-10">
@@ -47,7 +56,7 @@ export default function LoginPanel({ logoSquareUrl }: { logoSquareUrl?: string |
               Dùng tài khoản được cấp để quản trị website.
             </p>
 
-            <form action={formAction} className="space-y-4">
+            <form action={formAction} data-loading-mode="toast" className="space-y-4">
               <label className="block">
                 <span className="mb-1.5 block text-sm font-semibold">
                   Email hoặc tên đăng nhập
