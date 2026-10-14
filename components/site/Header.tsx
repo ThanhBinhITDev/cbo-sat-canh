@@ -50,7 +50,7 @@ export default function Header({
           : "bg-surface/80 backdrop-blur"
       }`}
     >
-      <div className="container-site flex h-[72px] items-center gap-4">
+      <div className="container-site flex h-[72px] flex-nowrap items-center gap-4">
         <Link href="/" aria-label="CBO Sát Cánh — Trang chủ" className="shrink-0">
           <Image
             src={logo}
@@ -58,31 +58,31 @@ export default function Header({
             width={190}
             height={48}
             priority
-            className="h-11 w-auto"
+            className="h-11 w-auto lg:h-10 xl:h-11"
           />
         </Link>
 
-        <nav className="ml-auto hidden items-center gap-1 lg:flex">
+        <nav className="ml-auto hidden flex-nowrap items-center gap-1 lg:flex">
           {NAV.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="rounded-full px-3 py-2 text-[0.95rem] font-medium text-ink transition hover:bg-muted hover:text-primary-dark"
+              className="shrink-0 whitespace-nowrap rounded-full px-2.5 py-2 text-[0.95rem] font-medium text-ink transition hover:bg-muted hover:text-primary-dark xl:px-3"
             >
               {item.label}
             </Link>
           ))}
         </nav>
 
-        <div className="ml-auto flex items-center gap-2 lg:ml-0">
+        <div className="ml-auto flex shrink-0 items-center gap-2 lg:ml-0">
           <a
             href={`tel:${hotline.replace(/\D/g, "")}`}
-            className="hidden items-center gap-2 rounded-full border border-line bg-surface px-4 py-2.5 text-sm font-bold text-primary-dark transition hover:bg-muted sm:inline-flex"
+            className="hidden shrink-0 items-center gap-2 rounded-full border border-line bg-surface px-3 py-2.5 text-sm font-bold text-primary-dark transition hover:bg-muted sm:inline-flex xl:px-4"
           >
             <Phone size={16} aria-hidden />
-            {hotline}
+            <span className="hidden whitespace-nowrap sm:inline lg:hidden xl:inline">{hotline}</span>
           </a>
-          <Link href="/lien-he" className="btn btn-primary hidden !py-2.5 !text-sm md:inline-flex">
+          <Link href="/lien-he" className="btn btn-primary hidden shrink-0 !py-2.5 !text-sm md:inline-flex">
             Hỏi thêm
           </Link>
 
