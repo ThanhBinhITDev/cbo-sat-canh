@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { requireRole, AuthError } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -48,21 +47,56 @@ function back(path?: string | null) {
   return raw;
 }
 
+/** Tín hiệu kết thúc action: `run` đổi thành ActionState để client hiện toast. */
+class ActionDone extends Error {
+  constructor(
+    readonly ok: boolean,
+    message?: string,
+  ) {
+    super(message);
+  }
+}
+
 function flash(
-  path: string,
+  _path: string,
   message: string,
   isError = false,
-  params: Record<string, string> = {},
+  _params: Record<string, string> = {},
 ): never {
-  const q = new URLSearchParams({
-    [isError ? "err" : "flash"]: message,
-    ...params,
-  });
-  redirect(`${path}?${q.toString()}`);
+  throw new ActionDone(!isError, message);
 }
 
 function fail(path: string, message: string, params?: Record<string, string>): never {
   flash(path, message, true, params);
+}
+
+/** Chạy thân action; kết thúc bằng flash/fail thì trả ActionState, lỗi khác thì ném tiếp. */
+async function run(fn: () => Promise<unknown>): Promise<ActionState> {
+  try {
+    await fn();
+    return { ok: true };
+  } catch (e) {
+    if (e instanceof ActionDone) return { ok: e.ok, message: e.message };
+    throw e;
+  }
+}
+
+/** Thông điệp lỗi quyền cho action trả ActionState. */
+function authMessage(e: unknown): string {
+  if (e instanceof AuthError) {
+    return e.code === "forbidden"
+      ? "Bạn không có quyền thực hiện thao tác này."
+      : "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
+  }
+  throw e;
+}
+
+/** Chặn ghi khi hết hạn mức, trả ActionState thay vì redirect. */
+async function quotaBlock(): Promise<ActionState | null> {
+  const status = await getQuotaStatus();
+  if (!status?.ok) return null;
+  const state = quotaState(status.value);
+  return state.locked ? { ok: false, message: quotaLockMessage(state) } : null;
 }
 
 /** Bọc lỗi quyền để trang gọi chuyển hướng đúng chỗ. */
@@ -227,11 +261,11 @@ export async function savePost(
   return { ok: true, message: status === "published" ? "Đã xuất bản bài viết." : "Đã lưu nháp." };
 }
 
-export async function deletePost(formData: FormData) {
+export async function deletePost(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
   const id = str(formData.get("id"));
   const backPath = back(str(formData.get("back")) || "/admin/bai-viet");
-
-  try {
+  return run(async () => {
+    try {
     await requireRole(["admin"]);
   } catch (e) {
     guard(e, backPath);
@@ -242,45 +276,49 @@ export async function deletePost(formData: FormData) {
   if (err) fail(backPath, `Không xoá được: ${err}`);
 
   revalidatePublic();
-  flash(backPath, "Đã xoá bài viết.");
+    flash(backPath, "Đã xoá bài viết.");
+  });
 }
 
 /* ------------------------------------------------------------------ *
  * Dịch vụ / Đối tác / Đội ngũ
  * ------------------------------------------------------------------ */
 
-export async function saveService(formData: FormData) {
+export async function saveService(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
   const id = str(formData.get("id"));
-  try {
-    await requireRole(["admin"]);
-  } catch (e) {
-    guard(e, "/admin/dich-vu");
-  }
-  await assertWritable("/admin/dich-vu");
+  return run(async () => {
+    try {
+      await requireRole(["admin"]);
+    } catch (e) {
+      guard(e, "/admin/dich-vu");
+    }
+    await assertWritable("/admin/dich-vu");
 
-  const title = str(formData.get("title"), 300);
-  if (!title) fail("/admin/dich-vu", "Vui lòng nhập tên dịch vụ.");
+    const title = str(formData.get("title"), 300);
+    if (!title) fail("/admin/dich-vu", "Vui lòng nhập tên dịch vụ.");
 
-  const row = {
-    title,
-    slug: str(formData.get("slug")) || slugify(title),
-    description: str(formData.get("description"), 500) || null,
-    icon: str(formData.get("icon"), 60) || null,
-    color: str(formData.get("color"), 20) || null,
-    sort_order: num(formData.get("sort_order"), 0),
-    is_active: bool(formData.get("is_active")),
-    ...(id ? { id } : {}),
-  };
+    const row = {
+      title,
+      slug: str(formData.get("slug")) || slugify(title),
+      description: str(formData.get("description"), 500) || null,
+      icon: str(formData.get("icon"), 60) || null,
+      color: str(formData.get("color"), 20) || null,
+      sort_order: num(formData.get("sort_order"), 0),
+      is_active: bool(formData.get("is_active")),
+      ...(id ? { id } : {}),
+    };
 
-  const err = await write("services", row, { onConflict: "id" });
-  if (err) fail("/admin/dich-vu", `Không lưu được: ${err}`);
+    const err = await write("services", row, { onConflict: "id" });
+    if (err) fail("/admin/dich-vu", `Không lưu được: ${err}`);
 
-  revalidatePublic();
-  flash("/admin/dich-vu", id ? "Đã cập nhật dịch vụ." : "Đã thêm dịch vụ.");
+    revalidatePublic();
+    flash("/admin/dich-vu", id ? "Đã cập nhật dịch vụ." : "Đã thêm dịch vụ.");
+  });
 }
 
-export async function deleteService(formData: FormData) {
-  try {
+export async function deleteService(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
+  return run(async () => {
+    try {
     await requireRole(["admin"]);
   } catch (e) {
     guard(e, "/admin/dich-vu");
@@ -289,63 +327,61 @@ export async function deleteService(formData: FormData) {
   const err = await remove("services", str(formData.get("id")));
   if (err) fail("/admin/dich-vu", `Không xoá được: ${err}`);
   revalidatePublic();
-  flash("/admin/dich-vu", "Đã xoá dịch vụ.");
+    flash("/admin/dich-vu", "Đã xoá dịch vụ.");
+  });
 }
 
-export async function savePartner(formData: FormData) {
+export async function savePartner(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
   const id = str(formData.get("id"));
-  try {
-    await requireRole(["admin"]);
-  } catch (e) {
-    guard(e, "/admin/doi-tac");
-  }
-  await assertWritable("/admin/doi-tac");
-
-  const group = str(formData.get("group"), 60);
-  const keep = { nhom: group };
-
-  const name = str(formData.get("name"), 200);
-  if (!name) fail("/admin/doi-tac", "Vui lòng nhập tên đối tác.", keep);
-  if (!group) fail("/admin/doi-tac", "Vui lòng chọn nhóm đối tác.", keep);
-
-  // Nhóm phải tồn tại trong partner_groups (bỏ qua nếu bảng chưa có — chưa chạy migration)
-  const supabase = await createClient();
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("partner_groups")
-      .select("key")
-      .eq("key", group)
-      .limit(1);
-    if (!error && (!data || data.length === 0)) {
-      fail("/admin/doi-tac", "Nhóm đối tác không tồn tại. Hãy chọn nhóm khác.", keep);
+  return run(async () => {
+    try {
+      await requireRole(["admin"]);
+    } catch (e) {
+      guard(e, "/admin/doi-tac");
     }
-  }
+    await assertWritable("/admin/doi-tac");
 
-  const row = {
-    name,
-    group,
-    logo_url: str(formData.get("logo_url"), 2000) || null,
-    website_url: str(formData.get("website_url"), 2000) || null,
-    sort_order: num(formData.get("sort_order"), 0),
-    is_active: bool(formData.get("is_active")),
-    ...(id ? { id } : {}),
-  };
+    const group = str(formData.get("group"), 60);
 
-  const err = await write("partners", row, { onConflict: "id" });
-  if (err) fail("/admin/doi-tac", `Không lưu được: ${err}`, keep);
+    const name = str(formData.get("name"), 200);
+    if (!name) fail("/admin/doi-tac", "Vui lòng nhập tên đối tác.");
+    if (!group) fail("/admin/doi-tac", "Vui lòng chọn nhóm đối tác.");
 
-  revalidatePublic();
-  flash(
-    "/admin/doi-tac",
-    id ? "Đã cập nhật đối tác." : "Đã thêm đối tác.",
-    false,
-    keep,
-  );
+    // Nhóm phải tồn tại trong partner_groups (bỏ qua nếu bảng chưa có — chưa chạy migration)
+    const supabase = await createClient();
+    if (supabase) {
+      const { data, error } = await supabase
+        .from("partner_groups")
+        .select("key")
+        .eq("key", group)
+        .limit(1);
+      if (!error && (!data || data.length === 0)) {
+        fail("/admin/doi-tac", "Nhóm đối tác không tồn tại. Hãy chọn nhóm khác.");
+      }
+    }
+
+    const row = {
+      name,
+      group,
+      logo_url: str(formData.get("logo_url"), 2000) || null,
+      website_url: str(formData.get("website_url"), 2000) || null,
+      sort_order: num(formData.get("sort_order"), 0),
+      is_active: bool(formData.get("is_active")),
+      ...(id ? { id } : {}),
+    };
+
+    const err = await write("partners", row, { onConflict: "id" });
+    if (err) fail("/admin/doi-tac", `Không lưu được: ${err}`);
+
+    revalidatePublic();
+    flash("/admin/doi-tac", id ? "Đã cập nhật đối tác." : "Đã thêm đối tác.");
+  });
 }
 
-export async function deletePartner(formData: FormData) {
+export async function deletePartner(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
   const keep = { nhom: str(formData.get("nhom"), 60) };
-  try {
+  return run(async () => {
+    try {
     await requireRole(["admin"]);
   } catch (e) {
     guard(e, "/admin/doi-tac");
@@ -354,71 +390,63 @@ export async function deletePartner(formData: FormData) {
   const err = await remove("partners", str(formData.get("id")));
   if (err) fail("/admin/doi-tac", `Không xoá được: ${err}`, keep);
   revalidatePublic();
-  flash("/admin/doi-tac", "Đã xoá đối tác.", false, keep);
+    flash("/admin/doi-tac", "Đã xoá đối tác.", false, keep);
+  });
 }
 
-export async function savePartnerGroup(formData: FormData) {
+export async function savePartnerGroup(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
   const path = "/admin/doi-tac";
   const original = str(formData.get("original"), 60);
-  const keep = { grp: original || "new" };
+  return run(async () => {
+    try {
+      await requireRole(["admin"]);
+    } catch (e) {
+      guard(e, path);
+    }
+    await assertWritable(path);
 
-  try {
-    await requireRole(["admin"]);
-  } catch (e) {
-    guard(e, path);
-  }
-  await assertWritable(path);
+    const label = str(formData.get("label"), 100);
+    const title = str(formData.get("title"), 200);
+    if (!label) fail(path, "Vui lòng nhập tên nhóm.");
+    if (!title) fail(path, "Vui lòng nhập tiêu đề hiển thị ở trang khách.");
 
-  const label = str(formData.get("label"), 100);
-  const title = str(formData.get("title"), 200);
-  if (!label) fail(path, "Vui lòng nhập tên nhóm.", keep);
-  if (!title) fail(path, "Vui lòng nhập tiêu đề hiển thị ở trang khách.", keep);
+    // Khóa kỹ thuật: tự sinh khi thêm, giữ nguyên khi sửa (đối tác đang gắn khóa cũ)
+    const key = original || slugify(label).slice(0, 60);
+    if (!key) fail(path, "Không tạo được khóa nhóm từ tên. Hãy dùng tên có chữ cái.");
 
-  // Khóa kỹ thuật: tự sinh khi thêm, giữ nguyên khi sửa (đối tác đang gắn khóa cũ)
-  const key = original || slugify(label).slice(0, 60);
-  if (!key) {
-    fail(path, "Không tạo được khóa nhóm từ tên. Hãy dùng tên có chữ cái.", {
-      grp: "new",
-    });
-  }
+    const row = {
+      label,
+      title,
+      subtitle: str(formData.get("subtitle"), 200) || null,
+      sort_order: num(formData.get("sort_order"), 0),
+      is_active: bool(formData.get("is_active")),
+    };
 
-  const row = {
-    label,
-    title,
-    subtitle: str(formData.get("subtitle"), 200) || null,
-    sort_order: num(formData.get("sort_order"), 0),
-    is_active: bool(formData.get("is_active")),
-  };
+    const supabase = await createClient();
+    if (!supabase) fail(path, "Chưa cấu hình Supabase (thiếu .env.local).");
 
-  const supabase = await createClient();
-  if (!supabase) fail(path, "Chưa cấu hình Supabase (thiếu .env.local).", keep);
+    const { error } = original
+      ? await supabase.from("partner_groups").update(row).eq("key", original)
+      : await supabase.from("partner_groups").insert({ key, ...row });
 
-  const { error } = original
-    ? await supabase.from("partner_groups").update(row).eq("key", original)
-    : await supabase.from("partner_groups").insert({ key, ...row });
+    if (error) {
+      fail(
+        path,
+        error.code === "23505"
+          ? "Tên nhóm đã tồn tại (khóa trùng). Hãy đổi tên nhóm khác."
+          : `Không lưu được: ${error.message}`,
+      );
+    }
 
-  if (error) {
-    fail(
-      path,
-      error.code === "23505"
-        ? "Tên nhóm đã tồn tại (khóa trùng). Hãy đổi tên nhóm khác."
-        : `Không lưu được: ${error.message}`,
-      keep,
-    );
-  }
-
-  revalidatePublic();
-  flash(
-    path,
-    original ? "Đã cập nhật nhóm đối tác." : "Đã thêm nhóm đối tác.",
-    false,
-    { nhom: key },
-  );
+    revalidatePublic();
+    flash(path, original ? "Đã cập nhật nhóm đối tác." : "Đã thêm nhóm đối tác.");
+  });
 }
 
-export async function deletePartnerGroup(formData: FormData) {
+export async function deletePartnerGroup(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
   const path = "/admin/doi-tac";
-  try {
+  return run(async () => {
+    try {
     await requireRole(["admin"]);
   } catch (e) {
     guard(e, path);
@@ -450,40 +478,44 @@ export async function deletePartnerGroup(formData: FormData) {
   if (error) fail(path, `Không xoá được: ${error.message}`, { nhom: key });
 
   revalidatePublic();
-  flash(path, "Đã xoá nhóm đối tác.");
+    flash(path, "Đã xoá nhóm đối tác.");
+  });
 }
 
-export async function saveTeamMember(formData: FormData) {
+export async function saveTeamMember(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
   const id = str(formData.get("id"));
-  try {
-    await requireRole(["admin"]);
-  } catch (e) {
-    guard(e, "/admin/doi-ngu");
-  }
-  await assertWritable("/admin/doi-ngu");
+  return run(async () => {
+    try {
+      await requireRole(["admin"]);
+    } catch (e) {
+      guard(e, "/admin/doi-ngu");
+    }
+    await assertWritable("/admin/doi-ngu");
 
-  const full_name = str(formData.get("full_name"), 150);
-  if (!full_name) fail("/admin/doi-ngu", "Vui lòng nhập họ tên.");
+    const full_name = str(formData.get("full_name"), 150);
+    if (!full_name) fail("/admin/doi-ngu", "Vui lòng nhập họ tên.");
 
-  const row = {
-    full_name,
-    position: str(formData.get("position"), 150) || null,
-    avatar_url: str(formData.get("avatar_url"), 2000) || null,
-    bio: str(formData.get("bio"), 600) || null,
-    sort_order: num(formData.get("sort_order"), 0),
-    is_active: bool(formData.get("is_active")),
-    ...(id ? { id } : {}),
-  };
+    const row = {
+      full_name,
+      position: str(formData.get("position"), 150) || null,
+      avatar_url: str(formData.get("avatar_url"), 2000) || null,
+      bio: str(formData.get("bio"), 600) || null,
+      sort_order: num(formData.get("sort_order"), 0),
+      is_active: bool(formData.get("is_active")),
+      ...(id ? { id } : {}),
+    };
 
-  const err = await write("team_members", row, { onConflict: "id" });
-  if (err) fail("/admin/doi-ngu", `Không lưu được: ${err}`);
+    const err = await write("team_members", row, { onConflict: "id" });
+    if (err) fail("/admin/doi-ngu", `Không lưu được: ${err}`);
 
-  revalidatePublic();
-  flash("/admin/doi-ngu", id ? "Đã cập nhật thành viên." : "Đã thêm thành viên.");
+    revalidatePublic();
+    flash("/admin/doi-ngu", id ? "Đã cập nhật thành viên." : "Đã thêm thành viên.");
+  });
 }
 
-export async function deleteTeamMember(formData: FormData) {
-  try {
+export async function deleteTeamMember(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
+  return run(async () => {
+    try {
     await requireRole(["admin"]);
   } catch (e) {
     guard(e, "/admin/doi-ngu");
@@ -492,22 +524,24 @@ export async function deleteTeamMember(formData: FormData) {
   const err = await remove("team_members", str(formData.get("id")));
   if (err) fail("/admin/doi-ngu", `Không xoá được: ${err}`);
   revalidatePublic();
-  flash("/admin/doi-ngu", "Đã xoá thành viên.");
+    flash("/admin/doi-ngu", "Đã xoá thành viên.");
+  });
 }
 
 /* ------------------------------------------------------------------ *
  * Nội dung tĩnh & giao diện
  * ------------------------------------------------------------------ */
 
-async function saveSetting(key: string, value: unknown, path: string) {
+/** Ghi setting và trả kết quả để client (toast.promise) hiển thị. */
+async function saveSetting(key: string, value: unknown): Promise<ActionState> {
   const err = await write(
     "site_settings",
     { key, value, updated_at: new Date().toISOString() },
     { onConflict: "key" },
   );
-  if (err) fail(path, `Không lưu được: ${err}`);
+  if (err) return { ok: false, message: `Không lưu được: ${err}` };
   revalidatePublic();
-  flash(path, "Đã lưu thay đổi.");
+  return { ok: true, message: "Đã lưu thay đổi." };
 }
 
 function parseJson(raw: string, path: string): unknown {
@@ -518,31 +552,36 @@ function parseJson(raw: string, path: string): unknown {
   }
 }
 
-export async function saveContentSection(formData: FormData) {
-  try {
-    await requireRole(["admin"]);
-  } catch (e) {
-    guard(e, "/admin/noi-dung");
-  }
-  await assertWritable("/admin/noi-dung");
+export async function saveContentSection(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
+  return run(async () => {
+    try {
+      await requireRole(["admin"]);
+    } catch (e) {
+      guard(e, "/admin/noi-dung");
+    }
+    await assertWritable("/admin/noi-dung");
 
-  const section = str(formData.get("section"));
-  const payload = str(formData.get("payload"));
-  const value = parseJson(payload, "/admin/noi-dung");
+    const section = str(formData.get("section"));
+    const payload = str(formData.get("payload"));
+    const value = parseJson(payload, "/admin/noi-dung");
 
-  const allowed = ["hero", "about", "vision", "mission", "values", "contact", "map", "footer", "seo"];
-  if (!allowed.includes(section)) fail("/admin/noi-dung", "Phần nội dung không hợp lệ.");
+    const allowed = ["hero", "about", "vision", "mission", "values", "contact", "map", "footer", "seo"];
+    if (!allowed.includes(section)) fail("/admin/noi-dung", "Phần nội dung không hợp lệ.");
 
-  await saveSetting(section, value, "/admin/noi-dung");
+    const result = await saveSetting(section, value);
+    if (!result.ok) fail("/admin/noi-dung", result.message ?? "Không lưu được.");
+    flash("/admin/noi-dung", result.message ?? "Đã lưu thay đổi.");
+  });
 }
 
-export async function saveTheme(formData: FormData) {
+export async function saveTheme(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
   try {
     await requireRole(["admin"]);
   } catch (e) {
-    guard(e, "/admin/giao-dien");
+    return { ok: false, message: authMessage(e) };
   }
-  await assertWritable("/admin/giao-dien");
+  const quota = await quotaBlock();
+  if (quota) return quota;
 
   const draft = {
     primary: str(formData.get("primary")),
@@ -557,24 +596,26 @@ export async function saveTheme(formData: FormData) {
   };
 
   const theme = normalizeTheme(draft);
-  await saveSetting("theme", theme satisfies Theme, "/admin/giao-dien");
+  return saveSetting("theme", theme satisfies Theme);
 }
 
-export async function saveBrand(formData: FormData) {
-  const path = "/admin/giao-dien";
+export async function saveBrand(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
   try {
     await requireRole(["admin"]);
   } catch (e) {
-    guard(e, path);
+    return { ok: false, message: authMessage(e) };
   }
-  await assertWritable(path);
+  const quota = await quotaBlock();
+  if (quota) return quota;
 
   const admin = createAdminClient();
-  if (!admin) fail(path, "Thiếu SUPABASE_SECRET_KEY trong .env.local nên không upload được ảnh.");
+  if (!admin) {
+    return { ok: false, message: "Thiếu SUPABASE_SECRET_KEY trong .env.local nên không upload được ảnh." };
+  }
 
   const current = normalizeBrand((await getSettings()).brand);
 
-  // Bước 1: đọc & hợp lệ hoá cả 3 trường (chưa upload gì cả).
+  // Bước 1: đọc & hợp lệ hoá cả 4 trường (chưa upload gì cả).
   const plan: { field: (typeof BRAND_FIELDS)[number]; file: File | null; value: string | null }[] = [];
   for (const field of BRAND_FIELDS) {
     const fileValue = formData.get(`${field}File`);
@@ -589,7 +630,7 @@ export async function saveBrand(formData: FormData) {
             : field === "faviconLight"
               ? "favicon sáng"
               : "favicon tối";
-      if (err) fail(path, `Ảnh ${name}: ${err}`);
+      if (err) return { ok: false, message: `Ảnh ${name}: ${err}` };
     }
     const clear = bool(formData.get(`${field}Clear`));
     const url = str(formData.get(`${field}Url`), 2000);
@@ -601,7 +642,9 @@ export async function saveBrand(formData: FormData) {
       value = null;
     } else if (url.trim()) {
       value = brandImageUrl(url);
-      if (!value) fail(path, "Ảnh phải là link http/https hoặc đường dẫn bắt đầu bằng /.");
+      if (!value) {
+        return { ok: false, message: "Ảnh phải là link http/https hoặc đường dẫn bắt đầu bằng /." };
+      }
     } else {
       value = null;
     }
@@ -619,7 +662,7 @@ export async function saveBrand(formData: FormData) {
       .upload(key, item.file, { cacheControl: "3600", upsert: false });
     if (up) {
       for (const k of uploaded) await admin.storage.from("site-assets").remove([k]);
-      fail(path, `Không upload được ảnh: ${up.message}`);
+      return { ok: false, message: `Không upload được ảnh: ${up.message}` };
     }
     uploaded.push(key);
     const { data: pub } = admin.storage.from("site-assets").getPublicUrl(key);
@@ -639,24 +682,26 @@ export async function saveBrand(formData: FormData) {
     await admin.storage.from("site-assets").remove(keys);
   }
 
-  await saveSetting("brand", next, path);
+  return saveSetting("brand", next);
 }
 
 /* ------------------------------------------------------------------ *
  * Màn hình chờ (Loader)
  * ------------------------------------------------------------------ */
 
-export async function saveLoader(formData: FormData) {
-  const path = "/admin/giao-dien";
+export async function saveLoader(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
   try {
     await requireRole(["admin"]);
   } catch (e) {
-    guard(e, path);
+    return { ok: false, message: authMessage(e) };
   }
-  await assertWritable(path);
+  const quota = await quotaBlock();
+  if (quota) return quota;
 
   const admin = createAdminClient();
-  if (!admin) fail(path, "Thiếu SUPABASE_SECRET_KEY trong .env.local nên không upload được ảnh.");
+  if (!admin) {
+    return { ok: false, message: "Thiếu SUPABASE_SECRET_KEY trong .env.local nên không upload được ảnh." };
+  }
 
   const current = normalizeLoader((await getSettings()).loader);
 
@@ -664,7 +709,7 @@ export async function saveLoader(formData: FormData) {
   const file = fileValue instanceof File && fileValue.size > 0 ? fileValue : null;
   if (file) {
     const err = validateLoaderFile(file);
-    if (err) fail(path, `Ảnh loader: ${err}`);
+    if (err) return { ok: false, message: `Ảnh loader: ${err}` };
   }
 
   const clear = bool(formData.get("clearImage"));
@@ -679,7 +724,9 @@ export async function saveLoader(formData: FormData) {
     imageUrl = null;
   } else if (url.trim()) {
     imageUrl = loaderImageUrl(url);
-    if (!imageUrl) fail(path, "Ảnh phải là link http/https hoặc đường dẫn bắt đầu bằng /.");
+    if (!imageUrl) {
+      return { ok: false, message: "Ảnh phải là link http/https hoặc đường dẫn bắt đầu bằng /." };
+    }
   } else {
     imageUrl = current.imageUrl;
   }
@@ -706,7 +753,7 @@ export async function saveLoader(formData: FormData) {
     const { error: up } = await admin.storage
       .from("site-assets")
       .upload(key, file, { cacheControl: "3600", upsert: false });
-    if (up) fail(path, `Không upload được ảnh: ${up.message}`);
+    if (up) return { ok: false, message: `Không upload được ảnh: ${up.message}` };
     const { data: pub } = admin.storage.from("site-assets").getPublicUrl(key);
     next.imageUrl = pub.publicUrl;
   }
@@ -718,7 +765,7 @@ export async function saveLoader(formData: FormData) {
     if (oldKey) await admin.storage.from("site-assets").remove([oldKey]);
   }
 
-  await saveSetting("loader", next, path);
+  return saveSetting("loader", next);
 }
 
 /* ------------------------------------------------------------------ *
@@ -738,90 +785,87 @@ function slideUploadPath(fileName: string): string {
   return `slides/${Date.now()}-${safe}`;
 }
 
-export async function saveHeroSlide(formData: FormData) {
+export async function saveHeroSlide(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
   const path = "/admin/slider";
   const id = str(formData.get("id"));
-  try {
-    await requireRole(["admin"]);
-  } catch (e) {
-    guard(e, path);
-  }
-  await assertWritable(path);
+  return run(async () => {
+    try {
+      await requireRole(["admin"]);
+    } catch (e) {
+      guard(e, path);
+    }
+    await assertWritable(path);
 
-  const alt = str(formData.get("alt"), 300);
-  const sort_order = num(formData.get("sort_order"), 0);
-  const is_active = bool(formData.get("is_active"));
+    const alt = str(formData.get("alt"), 300);
+    const sort_order = num(formData.get("sort_order"), 0);
+    const is_active = bool(formData.get("is_active"));
 
-  const fileValue = formData.get("image_file");
-  const file = fileValue instanceof File && fileValue.size > 0 ? fileValue : null;
-  const url = brandImageUrl(str(formData.get("image_url"), 2000));
+    const fileValue = formData.get("image_file");
+    const file = fileValue instanceof File && fileValue.size > 0 ? fileValue : null;
+    const url = brandImageUrl(str(formData.get("image_url"), 2000));
 
-  let imageUrl: string | null = null;
-  let uploadedKey: string | null = null;
-  if (file) {
-    const err = validateBrandImageFile(file);
-    if (err) fail(path, err, id ? { edit: id } : undefined);
-    const admin = createAdminClient();
-    if (!admin)
-      fail(path, "Thiếu SUPABASE_SECRET_KEY trong .env.local nên không upload được ảnh.", id ? { edit: id } : undefined);
-    const key = slideUploadPath(file.name);
-    const { error: up } = await admin.storage
-      .from("site-assets")
-      .upload(key, file, { cacheControl: "3600", upsert: false });
-    if (up) fail(path, `Không upload được ảnh: ${up.message}`, id ? { edit: id } : undefined);
-    uploadedKey = key;
-    const { data: pub } = admin.storage.from("site-assets").getPublicUrl(key);
-    imageUrl = pub.publicUrl;
-  } else if (url) {
-    imageUrl = url;
-  }
-  if (!imageUrl)
-    fail(
-      path,
-      "Vui lòng chọn file ảnh hoặc nhập URL ảnh.",
-      id ? { edit: id } : undefined,
-    );
+    let imageUrl: string | null = null;
+    let uploadedKey: string | null = null;
+    if (file) {
+      const err = validateBrandImageFile(file);
+      if (err) fail(path, err);
+      const admin = createAdminClient();
+      if (!admin) fail(path, "Thiếu SUPABASE_SECRET_KEY trong .env.local nên không upload được ảnh.");
+      const key = slideUploadPath(file.name);
+      const { error: up } = await admin.storage
+        .from("site-assets")
+        .upload(key, file, { cacheControl: "3600", upsert: false });
+      if (up) fail(path, `Không upload được ảnh: ${up.message}`);
+      uploadedKey = key;
+      const { data: pub } = admin.storage.from("site-assets").getPublicUrl(key);
+      imageUrl = pub.publicUrl;
+    } else if (url) {
+      imageUrl = url;
+    }
+    if (!imageUrl) fail(path, "Vui lòng chọn file ảnh hoặc nhập URL ảnh.");
 
-  // Ảnh cũ (nếu là object trong site-assets) sẽ bị dọn sau khi lưu thành công.
-  let oldKey: string | null = null;
-  if (id) {
-    const supabase = await createClient();
-    if (supabase) {
-      const { data: old } = await supabase
-        .from("hero_slides")
-        .select("image_url")
-        .eq("id", id)
-        .maybeSingle();
-      const oldUrl = old?.image_url;
-      if (typeof oldUrl === "string" && oldUrl && oldUrl !== imageUrl) {
-        oldKey = storagePathFromPublicUrl(oldUrl);
+    // Ảnh cũ (nếu là object trong site-assets) sẽ bị dọn sau khi lưu thành công.
+    let oldKey: string | null = null;
+    if (id) {
+      const supabase = await createClient();
+      if (supabase) {
+        const { data: old } = await supabase
+          .from("hero_slides")
+          .select("image_url")
+          .eq("id", id)
+          .maybeSingle();
+        const oldUrl = old?.image_url;
+        if (typeof oldUrl === "string" && oldUrl && oldUrl !== imageUrl) {
+          oldKey = storagePathFromPublicUrl(oldUrl);
+        }
       }
     }
-  }
 
-  const row = {
-    image_url: imageUrl,
-    alt: alt || null,
-    sort_order,
-    is_active,
-    ...(id ? { id } : {}),
-  };
-  const err = await write("hero_slides", row, { onConflict: "id" });
-  if (err) {
-    if (uploadedKey) await createAdminClient()?.storage.from("site-assets").remove([uploadedKey]);
-    fail(path, `Không lưu được: ${err}`, id ? { edit: id } : undefined);
-  }
+    const row = {
+      image_url: imageUrl,
+      alt: alt || null,
+      sort_order,
+      is_active,
+      ...(id ? { id } : {}),
+    };
+    const err = await write("hero_slides", row, { onConflict: "id" });
+    if (err) {
+      if (uploadedKey) await createAdminClient()?.storage.from("site-assets").remove([uploadedKey]);
+      fail(path, `Không lưu được: ${err}`);
+    }
 
-  if (oldKey) await createAdminClient()?.storage.from("site-assets").remove([oldKey]);
+    if (oldKey) await createAdminClient()?.storage.from("site-assets").remove([oldKey]);
 
-  revalidatePublic();
-  flash(path, id ? "Đã cập nhật slide." : "Đã thêm slide.");
+    revalidatePublic();
+    flash(path, id ? "Đã cập nhật slide." : "Đã thêm slide.");
+  });
 }
 
-export async function deleteHeroSlide(formData: FormData) {
+export async function deleteHeroSlide(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
   const path = "/admin/slider";
   const id = str(formData.get("id"));
-  try {
+  return run(async () => {
+    try {
     await requireRole(["admin"]);
   } catch (e) {
     guard(e, path);
@@ -845,38 +889,42 @@ export async function deleteHeroSlide(formData: FormData) {
   const err = await remove("hero_slides", id);
   if (err) fail(path, `Không xoá được: ${err}`);
   revalidatePublic();
-  flash(path, "Đã xoá slide.");
+    flash(path, "Đã xoá slide.");
+  });
 }
 
 /* ------------------------------------------------------------------ *
  * Quản lý ảnh
  * ------------------------------------------------------------------ */
 
-export async function saveMediaMeta(formData: FormData) {
+export async function saveMediaMeta(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
   const id = str(formData.get("id"));
   const path = str(formData.get("back")) || "/admin/anh";
-  const user = await requireRole(["admin", "editor"]).catch((e) => guard(e, path));
-  await assertWritable(path);
+  return run(async () => {
+    const user = await requireRole(["admin", "editor"]).catch((e) => guard(e, path));
+    await assertWritable(path);
 
-  const isAdmin = user.profile?.role === "admin";
-  const alt = str(formData.get("alt"), 300);
-  const kind = str(formData.get("kind"), 30);
+    const isAdmin = user.profile?.role === "admin";
+    const alt = str(formData.get("alt"), 300);
+    const kind = str(formData.get("kind"), 30);
 
-  const row: Record<string, unknown> = { alt: alt || null };
-  // Chỉ admin đổi được loại ảnh (banner/logo/trang trí)
-  if (kind && isAdmin) row.kind = kind;
-  if (id) row.id = id;
+    const row: Record<string, unknown> = { alt: alt || null };
+    // Chỉ admin đổi được loại ảnh (banner/logo/trang trí)
+    if (kind && isAdmin) row.kind = kind;
+    if (id) row.id = id;
 
-  const err = await write("media", row, { onConflict: "id" });
-  if (err) fail(path, `Không lưu được: ${err}`);
+    const err = await write("media", row, { onConflict: "id" });
+    if (err) fail(path, `Không lưu được: ${err}`);
 
-  revalidatePath("/admin/anh");
-  flash(path, "Đã cập nhật ảnh.");
+    revalidatePath("/admin/anh");
+    flash(path, "Đã cập nhật ảnh.");
+  });
 }
 
-export async function deleteMedia(formData: FormData) {
+export async function deleteMedia(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
   const backPath = back(str(formData.get("back")) || "/admin/anh");
-  try {
+  return run(async () => {
+    try {
     await requireRole(["admin"]);
   } catch (e) {
     guard(e, backPath);
@@ -896,51 +944,55 @@ export async function deleteMedia(formData: FormData) {
   if (error) fail(backPath, `Không xoá được: ${error.message}`);
 
   revalidatePath("/admin/anh");
-  flash(backPath, "Đã xoá ảnh.");
+    flash(backPath, "Đã xoá ảnh.");
+  });
 }
 
 /* ------------------------------------------------------------------ *
  * Câu hỏi liên hệ & Newsletter
  * ------------------------------------------------------------------ */
 
-export async function updateContactStatus(formData: FormData) {
+export async function updateContactStatus(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
   const path = "/admin/cau-hoi";
-  try {
-    await requireRole(["admin", "editor", "collaborator"]);
-  } catch (e) {
-    guard(e, path);
-  }
-  await assertWritable(path);
+  return run(async () => {
+    try {
+      await requireRole(["admin", "editor", "collaborator"]);
+    } catch (e) {
+      guard(e, path);
+    }
+    await assertWritable(path);
 
-  const id = str(formData.get("id"));
-  const status = str(formData.get("status")) as ContactStatus;
-  if (!["new", "replied", "archived"].includes(status)) fail(path, "Trạng thái không hợp lệ.");
+    const id = str(formData.get("id"));
+    const status = str(formData.get("status")) as ContactStatus;
+    if (!["new", "replied", "archived"].includes(status)) fail(path, "Trạng thái không hợp lệ.");
 
-  // collaborator chỉ xem — không cho đổi trạng thái
-  const user = await requireRole(["admin", "editor"]).catch((e) => guard(e, path));
-  if (!user.profile) fail(path, "Bạn không có quyền thực hiện thao tác này.");
+    // collaborator chỉ xem — không cho đổi trạng thái
+    const user = await requireRole(["admin", "editor"]).catch((e) => guard(e, path));
+    if (!user.profile) fail(path, "Bạn không có quyền thực hiện thao tác này.");
 
-  const err = await write(
-    "contact_messages",
-    { id, status, handled_by: user.id, updated_at: new Date().toISOString() },
-    { onConflict: "id" },
-  );
-  if (err) fail(path, `Không lưu được: ${err}`);
+    const err = await write(
+      "contact_messages",
+      { id, status, handled_by: user.id, updated_at: new Date().toISOString() },
+      { onConflict: "id" },
+    );
+    if (err) fail(path, `Không lưu được: ${err}`);
 
-  revalidatePath("/admin/cau-hoi");
-  flash(
-    path,
-    status === "replied"
-      ? "Đã đánh dấu đã trả lời."
-      : status === "archived"
-        ? "Đã lưu trữ câu hỏi."
-        : "Đã chuyển về trạng thái mới.",
-  );
+    revalidatePath("/admin/cau-hoi");
+    flash(
+      path,
+      status === "replied"
+        ? "Đã đánh dấu đã trả lời."
+        : status === "archived"
+          ? "Đã lưu trữ câu hỏi."
+          : "Đã chuyển về trạng thái mới.",
+    );
+  });
 }
 
-export async function deleteContactMessage(formData: FormData) {
+export async function deleteContactMessage(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
   const path = "/admin/cau-hoi";
-  try {
+  return run(async () => {
+    try {
     await requireRole(["admin"]);
   } catch (e) {
     guard(e, path);
@@ -949,12 +1001,14 @@ export async function deleteContactMessage(formData: FormData) {
   const err = await remove("contact_messages", str(formData.get("id")));
   if (err) fail(path, `Không xoá được: ${err}`);
   revalidatePath("/admin/cau-hoi");
-  flash(path, "Đã xoá câu hỏi.");
+    flash(path, "Đã xoá câu hỏi.");
+  });
 }
 
-export async function deleteNewsletter(formData: FormData) {
+export async function deleteNewsletter(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
   const path = "/admin/newsletter";
-  try {
+  return run(async () => {
+    try {
     await requireRole(["admin"]);
   } catch (e) {
     guard(e, path);
@@ -963,12 +1017,14 @@ export async function deleteNewsletter(formData: FormData) {
   const err = await remove("newsletters", str(formData.get("id")));
   if (err) fail(path, `Không xoá được: ${err}`);
   revalidatePath("/admin/newsletter");
-  flash(path, "Đã xoá người đăng ký.");
+    flash(path, "Đã xoá người đăng ký.");
+  });
 }
 
-export async function toggleNewsletter(formData: FormData) {
+export async function toggleNewsletter(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
   const path = "/admin/newsletter";
-  try {
+  return run(async () => {
+    try {
     await requireRole(["admin"]);
   } catch (e) {
     guard(e, path);
@@ -985,50 +1041,54 @@ export async function toggleNewsletter(formData: FormData) {
   if (err) fail(path, `Không lưu được: ${err}`);
 
   revalidatePath("/admin/newsletter");
-  flash(path, active ? "Đã kích hoạt lại." : "Đã ngừng gửi tin cho email này.");
+    flash(path, active ? "Đã kích hoạt lại." : "Đã ngừng gửi tin cho email này.");
+  });
 }
 
 /* ------------------------------------------------------------------ *
  * Tài khoản
  * ------------------------------------------------------------------ */
 
-export async function updateAccountRole(formData: FormData) {
+export async function updateAccountRole(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
   const path = "/admin/tai-khoan";
-  try {
-    await requireRole(["admin"]);
-  } catch (e) {
-    guard(e, path);
-  }
-  await assertWritable(path);
+  return run(async () => {
+    try {
+      await requireRole(["admin"]);
+    } catch (e) {
+      guard(e, path);
+    }
+    await assertWritable(path);
 
-  const id = str(formData.get("id"));
-  const role = str(formData.get("role")) as Role;
-  if (!["admin", "editor", "collaborator"].includes(role)) {
-    fail(path, "Vai trò không hợp lệ.");
-  }
+    const id = str(formData.get("id"));
+    const role = str(formData.get("role")) as Role;
+    if (!["admin", "editor", "collaborator"].includes(role)) {
+      fail(path, "Vai trò không hợp lệ.");
+    }
 
-  const supabase = await createClient();
-  if (!supabase) fail(path, "Chưa cấu hình Supabase (thiếu .env.local).");
+    const supabase = await createClient();
+    if (!supabase) fail(path, "Chưa cấu hình Supabase (thiếu .env.local).");
 
-  const { data: admin } = await supabase.auth.getUser();
-  if (admin.user?.id === id) {
-    fail(path, "Bạn không thể tự đổi vai trò của chính mình.");
-  }
+    const { data: admin } = await supabase.auth.getUser();
+    if (admin.user?.id === id) {
+      fail(path, "Bạn không thể tự đổi vai trò của chính mình.");
+    }
 
-  const err = await write(
-    "profiles",
-    { id, role, updated_at: new Date().toISOString() },
-    { onConflict: "id" },
-  );
-  if (err) fail(path, `Không cập nhật được: ${err}`);
+    const err = await write(
+      "profiles",
+      { id, role, updated_at: new Date().toISOString() },
+      { onConflict: "id" },
+    );
+    if (err) fail(path, `Không cập nhật được: ${err}`);
 
-  revalidatePath(path);
-  flash(path, "Đã cập nhật vai trò.");
+    revalidatePath(path);
+    flash(path, "Đã cập nhật vai trò.");
+  });
 }
 
-export async function toggleAccountActive(formData: FormData) {
+export async function toggleAccountActive(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
   const path = "/admin/tai-khoan";
-  try {
+  return run(async () => {
+    try {
     await requireRole(["admin"]);
   } catch (e) {
     guard(e, path);
@@ -1052,7 +1112,8 @@ export async function toggleAccountActive(formData: FormData) {
   if (err) fail(path, `Không cập nhật được: ${err}`);
 
   revalidatePath(path);
-  flash(path, active ? "Đã mở khóa tài khoản." : "Đã khóa tài khoản.");
+    flash(path, active ? "Đã mở khóa tài khoản." : "Đã khóa tài khoản.");
+  });
 }
 
 export async function createAccount(
@@ -1246,97 +1307,103 @@ export async function updateAccountProfile(
 }
 
 /** Mọi vai trò sửa hồ sơ của chính mình tại /admin/ho-so. */
-export async function updateMyProfile(formData: FormData) {
+export async function updateMyProfile(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
   const path = "/admin/ho-so";
-  const supabase = await createClient();
-  if (!supabase) fail(path, "Chưa cấu hình Supabase (thiếu .env.local).");
+  return run(async () => {
+    const supabase = await createClient();
+    if (!supabase) fail(path, "Chưa cấu hình Supabase (thiếu .env.local).");
 
-  let me;
-  try {
-    me = await requireRole(["admin", "editor", "collaborator"]);
-  } catch (e) {
-    guard(e, path);
-  }
-  await assertWritable(path);
-
-  const full_name = str(formData.get("full_name"), 150);
-  const username = normalizeUsername(str(formData.get("username"), 30));
-  const original_username = normalizeUsername(str(formData.get("original_username"), 30));
-
-  if (!full_name) fail(path, "Họ tên không được để trống.");
-  const usernameErr = validateUsername(username);
-  if (usernameErr) fail(path, usernameErr);
-
-  if (username && username !== original_username) {
-    const { data: resolved } = await supabase.rpc("resolve_login_identifier", {
-      p_identifier: username,
-    });
-    if (typeof resolved === "string") {
-      fail(path, `Tên đăng nhập "${username}" đã được dùng. Hãy chọn tên khác.`);
+    let me;
+    try {
+      me = await requireRole(["admin", "editor", "collaborator"]);
+    } catch (e) {
+      guard(e, path);
     }
-  }
+    await assertWritable(path);
 
-  const { error } = await supabase
-    .from("profiles")
-    .update({ full_name, username: username || null })
-    .eq("id", me.id);
-  if (error) {
-    if (error.code === "23505") fail(path, "Tên đăng nhập đã tồn tại.");
-    fail(path, `Không cập nhật được hồ sơ: ${error.message}`);
-  }
+    const full_name = str(formData.get("full_name"), 150);
+    const username = normalizeUsername(str(formData.get("username"), 30));
+    const original_username = normalizeUsername(str(formData.get("original_username"), 30));
 
-  revalidatePath(path);
-  flash(path, "Đã lưu hồ sơ.");
+    if (!full_name) fail(path, "Họ tên không được để trống.");
+    const usernameErr = validateUsername(username);
+    if (usernameErr) fail(path, usernameErr);
+
+    if (username && username !== original_username) {
+      const { data: resolved } = await supabase.rpc("resolve_login_identifier", {
+        p_identifier: username,
+      });
+      if (typeof resolved === "string") {
+        fail(path, `Tên đăng nhập "${username}" đã được dùng. Hãy chọn tên khác.`);
+      }
+    }
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ full_name, username: username || null })
+      .eq("id", me.id);
+    if (error) {
+      if (error.code === "23505") fail(path, "Tên đăng nhập đã tồn tại.");
+      fail(path, `Không cập nhật được hồ sơ: ${error.message}`);
+    }
+
+    revalidatePath(path);
+    flash(path, "Đã lưu hồ sơ.");
+  });
 }
 
 /** Đổi email của chính mình — cần bấm link xác nhận trong email mới. */
-export async function changeMyEmail(formData: FormData) {
+export async function changeMyEmail(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
   const path = "/admin/ho-so";
-  const supabase = await createClient();
-  if (!supabase) fail(path, "Chưa cấu hình Supabase (thiếu .env.local).");
+  return run(async () => {
+    const supabase = await createClient();
+    if (!supabase) fail(path, "Chưa cấu hình Supabase (thiếu .env.local).");
 
-  try {
-    await requireRole(["admin", "editor", "collaborator"]);
-  } catch (e) {
-    guard(e, path);
-  }
-  await assertWritable(path);
+    try {
+      await requireRole(["admin", "editor", "collaborator"]);
+    } catch (e) {
+      guard(e, path);
+    }
+    await assertWritable(path);
 
-  const email = str(formData.get("email")).toLowerCase();
-  if (!isValidEmail(email)) fail(path, "Email không hợp lệ.");
+    const email = str(formData.get("email")).toLowerCase();
+    if (!isValidEmail(email)) fail(path, "Email không hợp lệ.");
 
-  const { data: au } = await supabase.auth.getUser();
-  if (au.user?.email === email) fail(path, "Email mới trùng email hiện tại.");
+    const { data: au } = await supabase.auth.getUser();
+    if (au.user?.email === email) fail(path, "Email mới trùng email hiện tại.");
 
-  const { error } = await supabase.auth.updateUser({ email });
-  if (error) fail(path, `Không gửi được yêu cầu đổi email: ${error.message}`);
+    const { error } = await supabase.auth.updateUser({ email });
+    if (error) fail(path, `Không gửi được yêu cầu đổi email: ${error.message}`);
 
-  flash(
-    path,
-    `Đã gửi link xác nhận tới ${email}. Bấm link trong email để hoàn tất — vẫn đăng nhập bằng email cũ cho đến khi xác nhận.`,
-  );
+    flash(
+      path,
+      `Đã gửi link xác nhận tới ${email}. Bấm link trong email để hoàn tất — vẫn đăng nhập bằng email cũ cho đến khi xác nhận.`,
+    );
+  });
 }
 
 /** Đổi mật khẩu của chính mình. */
-export async function changeMyPassword(formData: FormData) {
+export async function changeMyPassword(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
   const path = "/admin/ho-so";
-  const supabase = await createClient();
-  if (!supabase) fail(path, "Chưa cấu hình Supabase (thiếu .env.local).");
+  return run(async () => {
+    const supabase = await createClient();
+    if (!supabase) fail(path, "Chưa cấu hình Supabase (thiếu .env.local).");
 
-  try {
-    await requireRole(["admin", "editor", "collaborator"]);
-  } catch (e) {
-    guard(e, path);
-  }
-  await assertWritable(path);
+    try {
+      await requireRole(["admin", "editor", "collaborator"]);
+    } catch (e) {
+      guard(e, path);
+    }
+    await assertWritable(path);
 
-  const password = str(formData.get("password"));
-  const confirm = str(formData.get("confirm"));
-  if (password.length < 8) fail(path, "Mật khẩu mới phải có ít nhất 8 ký tự.");
-  if (password !== confirm) fail(path, "Mật khẩu nhập lại không khớp.");
+    const password = str(formData.get("password"));
+    const confirm = str(formData.get("confirm"));
+    if (password.length < 8) fail(path, "Mật khẩu mới phải có ít nhất 8 ký tự.");
+    if (password !== confirm) fail(path, "Mật khẩu nhập lại không khớp.");
 
-  const { error } = await supabase.auth.updateUser({ password });
-  if (error) fail(path, `Không đổi được mật khẩu: ${error.message}`);
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) fail(path, `Không đổi được mật khẩu: ${error.message}`);
 
-  flash(path, "Đã đổi mật khẩu.");
+    flash(path, "Đã đổi mật khẩu.");
+  });
 }

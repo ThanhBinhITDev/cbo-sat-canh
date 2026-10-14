@@ -4,6 +4,7 @@ import { Flash, PageHeader, Panel, PanelHead, EmptyState } from "@/components/ad
 import { ErrorState } from "@/components/admin/States";
 import ConfirmSubmit from "@/components/admin/ConfirmSubmit";
 import AccountCreateForm from "@/components/admin/AccountCreateForm";
+import { ToastForm } from "@/components/admin/ProfileForms";
 import { getProfilesAdmin } from "@/lib/admin/data";
 import { toggleAccountActive, updateAccountRole } from "@/lib/admin/actions";
 import { getSessionUser } from "@/lib/auth";
@@ -121,7 +122,7 @@ export default async function AccountsPage({
                                 {ROLE_LABELS[row.role]}
                               </span>
                             ) : (
-                              <form action={updateAccountRole} data-loading-mode="toast" className="flex items-center gap-2">
+                              <ToastForm action={updateAccountRole} loading="Đang cập nhật vai trò..." className="flex items-center gap-2">
                                 <input type="hidden" name="id" value={row.id} />
                                 <select
                                   name="role"
@@ -140,7 +141,7 @@ export default async function AccountsPage({
                                 >
                                   Lưu
                                 </button>
-                              </form>
+                              </ToastForm>
                             )}
                           </td>
                           <td>
@@ -160,7 +161,7 @@ export default async function AccountsPage({
                                 <Pencil size={13} /> Sửa
                               </Link>
                               {!isSelf && (
-                                <form action={toggleAccountActive} data-loading-mode="none">
+                                <ToastForm action={toggleAccountActive} loading="Đang cập nhật tài khoản...">
                                   <input type="hidden" name="id" value={row.id} />
                                   <input type="hidden" name="is_active" value={String(row.is_active)} />
                                   <ConfirmSubmit
@@ -181,7 +182,7 @@ export default async function AccountsPage({
                                       </>
                                     )}
                                   </ConfirmSubmit>
-                                </form>
+                                </ToastForm>
                               )}
                             </div>
                           </td>

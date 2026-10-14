@@ -2,6 +2,7 @@ import { Mail, Download, UserMinus, UserCheck, Trash2 } from "lucide-react";
 import { Flash, PageHeader, Panel, PanelHead, EmptyState } from "@/components/admin/ui";
 import { ErrorState } from "@/components/admin/States";
 import ConfirmSubmit from "@/components/admin/ConfirmSubmit";
+import { ToastForm } from "@/components/admin/ProfileForms";
 import { getNewslettersAdmin } from "@/lib/admin/data";
 import { deleteNewsletter, toggleNewsletter } from "@/lib/admin/actions";
 import { formatDate } from "@/lib/format";
@@ -86,7 +87,7 @@ export default async function NewsletterAdminPage({
                       {canManage && (
                         <td>
                           <div className="flex justify-end gap-2">
-                            <form action={toggleNewsletter} data-loading-mode="none">
+                            <ToastForm action={toggleNewsletter} loading="Đang cập nhật newsletter...">
                               <input type="hidden" name="id" value={row.id} />
                               <input type="hidden" name="is_active" value={String(row.is_active)} />
                               <button
@@ -96,14 +97,14 @@ export default async function NewsletterAdminPage({
                                 {row.is_active ? <UserMinus size={15} /> : <UserCheck size={15} />}
                                 {row.is_active ? "Ngừng gửi" : "Kích hoạt"}
                               </button>
-                            </form>
+                            </ToastForm>
 
-                            <form action={deleteNewsletter}>
+                            <ToastForm action={deleteNewsletter} loading="Đang xoá người đăng ký...">
                               <input type="hidden" name="id" value={row.id} />
                               <ConfirmSubmit confirmText={`Xoá ${row.email} khỏi danh sách?`}>
                                 <Trash2 size={15} />
                               </ConfirmSubmit>
-                            </form>
+                            </ToastForm>
                           </div>
                         </td>
                       )}

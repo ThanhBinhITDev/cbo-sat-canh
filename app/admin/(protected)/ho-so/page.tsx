@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { KeyRound, Mail, ShieldCheck, UserRound } from "lucide-react";
 import { Field, Flash, PageHeader, Panel, PanelHead } from "@/components/admin/ui";
 import AvatarPicker from "@/components/admin/AvatarPicker";
+import { ToastForm } from "@/components/admin/ProfileForms";
 import { getSessionUser } from "@/lib/auth";
 import {
   changeMyEmail,
@@ -44,7 +45,7 @@ export default async function ProfilePage({
               fullName={p.full_name || user.email}
             />
 
-            <form action={updateMyProfile} data-loading-mode="toast" className="space-y-4">
+            <ToastForm action={updateMyProfile} loading="Đang lưu hồ sơ..." className="space-y-4">
               <input
                 type="hidden"
                 name="original_username"
@@ -78,7 +79,7 @@ export default async function ProfilePage({
               <button type="submit" className="btn btn-primary !py-2.5 text-sm">
                 Lưu hồ sơ
               </button>
-            </form>
+            </ToastForm>
           </div>
         </Panel>
 
@@ -90,7 +91,7 @@ export default async function ProfilePage({
               action={<Mail size={18} className="text-primary" />}
             />
             <div className="p-5">
-              <form action={changeMyEmail} data-loading-mode="toast" className="space-y-4">
+              <ToastForm action={changeMyEmail} loading="Đang gửi xác nhận email..." className="space-y-4">
                 <Field
                   label="Email mới"
                   hint="Hệ thống gửi link xác nhận tới email mới — vẫn đăng nhập bằng email cũ cho đến khi bạn bấm link."
@@ -109,7 +110,7 @@ export default async function ProfilePage({
                 >
                   Cập nhật email
                 </button>
-              </form>
+              </ToastForm>
             </div>
           </Panel>
 
@@ -119,7 +120,7 @@ export default async function ProfilePage({
               subtitle="Đổi mật khẩu đăng nhập"
               action={<KeyRound size={18} className="text-primary" />}
             />
-            <form action={changeMyPassword} data-loading-mode="toast" className="space-y-4 p-5">
+            <ToastForm action={changeMyPassword} loading="Đang đổi mật khẩu..." className="space-y-4 p-5">
               <Field label="Mật khẩu mới" required hint="Tối thiểu 8 ký tự.">
                 <input
                   name="password"
@@ -148,7 +149,7 @@ export default async function ProfilePage({
               >
                 Đổi mật khẩu
               </button>
-            </form>
+            </ToastForm>
           </Panel>
 
           <div className="card flex items-center gap-3 p-4">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useTransition, type FormEvent } from "react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -16,9 +16,8 @@ import {
   Eye,
   Save,
 } from "lucide-react";
-import { savePost, type ActionState } from "@/lib/admin/actions";
-import { useGlobalLoading } from "@/lib/loading";
-import { useToastLoading, useToastResult } from "@/hooks/use-toast-loading";
+import { savePost } from "@/lib/admin/actions";
+import { submitWithToast } from "@/lib/admin/submit-with-toast";
 import { slugify } from "@/lib/slug";
 import { CATEGORY_LABELS, type Post } from "@/lib/types";
 import { BackLink, Field } from "./ui";
@@ -37,13 +36,16 @@ const TOOLBAR = [
 ] as const;
 
 export default function PostEditor({ post }: Props) {
-  const [state, formAction, pending] = useActionState<ActionState | null, FormData>(
-    savePost,
-    null,
-  );
-  useGlobalLoading(pending);
-  useToastLoading(pending, { loading: "Đang lưu bài viết..." });
-  useToastResult(state);
+  const [pending, startTransition] = useTransition();
+  const [state, setState] = useState<{ ok: boolean; message?: string } | null>(null);
+  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setState(null);
+    const formData = new FormData(e.currentTarget);
+    startTransition(async () => {
+      setState(await submitWithToast(formData, savePost, { loading: "Đang lưu bài viết..." }));
+    });
+  };
 
   const [title, setTitle] = useState(post?.title ?? "");
   const [slug, setSlug] = useState(post?.slug ?? "");
@@ -89,7 +91,7 @@ export default function PostEditor({ post }: Props) {
         </p>
       )}
 
-      <form action={formAction} data-loading-mode="toast" className="mt-5 grid gap-5 lg:grid-cols-[1.6fr,1fr]">
+      <form onSubmit={onSubmit} className="mt-5 grid gap-5 lg:grid-cols-[1.6fr,1fr]">
         {post && <input type="hidden" name="id" value={post.id} />}
         <input type="hidden" name="back" value="/admin/bai-viet" />
 

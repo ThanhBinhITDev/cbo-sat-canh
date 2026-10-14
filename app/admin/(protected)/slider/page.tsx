@@ -8,6 +8,7 @@ import {
 } from "@/components/admin/ui";
 import { ErrorState } from "@/components/admin/States";
 import ConfirmSubmit from "@/components/admin/ConfirmSubmit";
+import { ToastForm } from "@/components/admin/ProfileForms";
 import SlideForm from "@/components/admin/SlideForm";
 import { getHeroSlidesAdmin } from "@/lib/admin/data";
 import { deleteHeroSlide } from "@/lib/admin/actions";
@@ -85,12 +86,12 @@ export default async function SliderAdminPage({
                       >
                         <Pencil size={15} />
                       </a>
-                      <form action={deleteHeroSlide}>
+                      <ToastForm action={deleteHeroSlide} loading="Đang xoá slide...">
                         <input type="hidden" name="id" value={row.id} />
                         <ConfirmSubmit confirmText="Xoá slide này khỏi trang chủ?">
                           <Trash2 size={15} />
                         </ConfirmSubmit>
-                      </form>
+                      </ToastForm>
                     </div>
                   </div>
                 ))}

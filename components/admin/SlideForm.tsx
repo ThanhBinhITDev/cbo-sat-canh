@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ImagePlus, Link2, Save } from "lucide-react";
 import { saveHeroSlide } from "@/lib/admin/actions";
+import { submitWithToast } from "@/lib/admin/submit-with-toast";
 import { Field } from "@/components/admin/ui";
 import ImageCropper from "@/components/admin/ImageCropper";
 import type { HeroSlide } from "@/lib/types";
@@ -58,18 +59,20 @@ export default function SlideForm({
 
   const preview = objectUrl || url;
 
-  const submit = async (fd: FormData) => {
+  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
     // File đã cắt nằm trong state (không nằm trong input DOM) → tự append vào FormData.
     if (file) {
       fd.delete("image_file");
       fd.append("image_file", file);
     }
-    await saveHeroSlide(fd);
+    void submitWithToast(fd, saveHeroSlide, { loading: "Đang lưu slide..." });
   };
 
   return (
     <>
-      <form action={submit} data-loading-mode="toast" className="space-y-4 p-5">
+      <form onSubmit={onSubmit} className="space-y-4 p-5">
         {editing && <input type="hidden" name="id" value={editing.id} />}
 
         <Field

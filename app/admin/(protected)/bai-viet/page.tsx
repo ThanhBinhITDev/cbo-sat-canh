@@ -4,6 +4,7 @@ import { Flash, PageHeader, Panel, EmptyState } from "@/components/admin/ui";
 import { ErrorState } from "@/components/admin/States";
 import GuideBanner from "@/components/admin/GuideBanner";
 import ConfirmSubmit from "@/components/admin/ConfirmSubmit";
+import { ToastForm } from "@/components/admin/ProfileForms";
 import SelectField from "@/components/admin/SelectField";
 import { getPostsAdmin } from "@/lib/admin/data";
 import { deletePost } from "@/lib/admin/actions";
@@ -169,13 +170,13 @@ export default async function PostsAdminPage({ searchParams }: Props) {
                                   Sửa
                                 </Link>
                                 {canDelete && (
-                                  <form action={deletePost}>
+                                  <ToastForm action={deletePost} loading="Đang xoá bài viết...">
                                     <input type="hidden" name="id" value={row.id} />
                                     <input type="hidden" name="back" value="/admin/bai-viet" />
                                     <ConfirmSubmit confirmText={`Xoá bài "${row.title}"?`}>
                                       Xoá
                                     </ConfirmSubmit>
-                                  </form>
+                                  </ToastForm>
                                 )}
                               </div>
                             </td>

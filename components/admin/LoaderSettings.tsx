@@ -10,8 +10,10 @@ import {
   Trash2,
   Type,
 } from "lucide-react";
+import type { FormEvent } from "react";
 import { Toggle } from "./ui";
 import { saveLoader } from "@/lib/admin/actions";
+import { submitWithToast } from "@/lib/admin/submit-with-toast";
 import type { LoaderConfig } from "@/lib/loader";
 
 const ACCEPT = "image/png,image/jpeg,image/webp,image/gif,image/avif";
@@ -86,7 +88,15 @@ export default function LoaderSettings({ initial }: Props) {
   };
 
   return (
-    <form action={saveLoader} data-loading-mode="toast" className="card p-5">
+    <form
+      onSubmit={(e: FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        void submitWithToast(new FormData(e.currentTarget), saveLoader, {
+          loading: "Đang lưu màn hình chờ...",
+        });
+      }}
+      className="card p-5"
+    >
       <div className="mb-1 flex items-center gap-2">
         <LoaderCircle size={18} className="text-primary" />
         <h2 className="text-base font-bold">Màn hình chờ (Loader)</h2>

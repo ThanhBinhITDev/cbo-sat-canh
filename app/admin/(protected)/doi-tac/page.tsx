@@ -16,6 +16,7 @@ import {
   savePartner,
   savePartnerGroup,
 } from "@/lib/admin/actions";
+import { ToastForm } from "@/components/admin/ProfileForms";
 import { DEFAULT_PARTNER_GROUPS } from "@/lib/content";
 
 export default async function PartnersAdminPage({
@@ -117,14 +118,14 @@ export default async function PartnersAdminPage({
                       >
                         <Pencil size={15} />
                       </a>
-                      <form action={deletePartnerGroup}>
+                      <ToastForm action={deletePartnerGroup} loading="Đang xoá nhóm đối tác...">
                         <input type="hidden" name="key" value={activeGroup.key} />
                         <ConfirmSubmit
                           confirmText={`Xoá nhóm "${activeGroup.label}"? Chỉ xoá được khi nhóm chưa có đối tác.`}
                         >
                           <Trash2 size={15} />
                         </ConfirmSubmit>
-                      </form>
+                      </ToastForm>
                     </div>
                   ) : undefined
                 }
@@ -185,13 +186,13 @@ export default async function PartnersAdminPage({
                           >
                             <Pencil size={15} />
                           </a>
-                          <form action={deletePartner}>
+                          <ToastForm action={deletePartner} loading="Đang xoá đối tác...">
                             <input type="hidden" name="id" value={row.id} />
                             <input type="hidden" name="nhom" value={row.group} />
                             <ConfirmSubmit confirmText={`Xoá đối tác "${row.name}"?`}>
                               <Trash2 size={15} />
                             </ConfirmSubmit>
-                          </form>
+                          </ToastForm>
                         </div>
                       </div>
                     ))}
@@ -207,7 +208,7 @@ export default async function PartnersAdminPage({
                 title={editingGroup ? "Sửa nhóm đối tác" : "Thêm nhóm đối tác"}
                 subtitle="Tên hiển thị ở tab; tiêu đề hiển thị ở trang khách"
               />
-              <form action={savePartnerGroup} data-loading-mode="toast" className="space-y-4 p-5">
+              <ToastForm action={savePartnerGroup} loading="Đang lưu nhóm đối tác..." className="space-y-4 p-5">
                 {editingGroup && (
                   <input type="hidden" name="original" value={editingGroup.key} />
                 )}
@@ -280,7 +281,7 @@ export default async function PartnersAdminPage({
                     Huỷ
                   </a>
                 </div>
-              </form>
+              </ToastForm>
             </Panel>
           )}
 
@@ -290,7 +291,7 @@ export default async function PartnersAdminPage({
                 title={editing ? "Sửa đối tác" : "Thêm đối tác"}
                 subtitle="Logo nên là ảnh vuông nền trong suốt (PNG)"
               />
-              <form action={savePartner} data-loading-mode="toast" className="space-y-4 p-5">
+              <ToastForm action={savePartner} loading="Đang lưu đối tác..." className="space-y-4 p-5">
                 {editing && <input type="hidden" name="id" value={editing.id} />}
 
                 <Field label="Tên đối tác" required>
@@ -367,7 +368,7 @@ export default async function PartnersAdminPage({
                     Huỷ
                   </a>
                 </div>
-              </form>
+              </ToastForm>
             </Panel>
           )}
         </div>

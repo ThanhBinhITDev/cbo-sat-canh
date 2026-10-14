@@ -7,6 +7,7 @@ import CopyUrlButton from "@/components/admin/CopyUrlButton";
 import MediaUploader from "@/components/admin/MediaUploader";
 import { getMediaAdmin } from "@/lib/admin/data";
 import { deleteMedia, saveMediaMeta } from "@/lib/admin/actions";
+import { ToastForm } from "@/components/admin/ProfileForms";
 import { getSessionUser } from "@/lib/auth";
 import { formatDate } from "@/lib/format";
 
@@ -132,7 +133,7 @@ export default async function MediaAdminPage({
                       />
                     </div>
 
-                    <form action={saveMediaMeta} data-loading-mode="toast" className="space-y-4">
+                    <ToastForm action={saveMediaMeta} loading="Đang lưu thông tin ảnh..." className="space-y-4">
                       <input type="hidden" name="id" value={selected.id} />
                       <input
                         type="hidden"
@@ -168,12 +169,12 @@ export default async function MediaAdminPage({
                       <button type="submit" className="btn btn-primary w-full py-2.5 text-sm">
                         Lưu thay đổi
                       </button>
-                    </form>
+                    </ToastForm>
 
                     <div className="flex flex-wrap gap-2">
                       <CopyUrlButton url={selected.public_url} />
                       {canManage && (
-                        <form action={deleteMedia}>
+                        <ToastForm action={deleteMedia} loading="Đang xoá ảnh...">
                           <input type="hidden" name="id" value={selected.id} />
                           <input type="hidden" name="storage_path" value={selected.storage_path ?? ""} />
                           <input
@@ -184,7 +185,7 @@ export default async function MediaAdminPage({
                           <ConfirmSubmit confirmText="Xoá vĩnh viễn ảnh này khỏi thư viện?">
                             <Trash2 size={15} /> Xoá ảnh
                           </ConfirmSubmit>
-                        </form>
+                        </ToastForm>
                       )}
                     </div>
 

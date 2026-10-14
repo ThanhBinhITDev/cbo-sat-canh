@@ -5,6 +5,7 @@ import { ErrorState } from "@/components/admin/States";
 import ConfirmSubmit from "@/components/admin/ConfirmSubmit";
 import { getContactsAdmin } from "@/lib/admin/data";
 import { deleteContactMessage, updateContactStatus } from "@/lib/admin/actions";
+import { ToastForm } from "@/components/admin/ProfileForms";
 import { getSessionUser } from "@/lib/auth";
 import { SERVICE_OPTIONS, type ContactStatus } from "@/lib/types";
 import { formatTime } from "@/lib/format";
@@ -221,7 +222,7 @@ export default async function ContactMessagesPage({
                         <p className="label">Cập nhật trạng thái</p>
                         <div className="grid gap-2 sm:grid-cols-3">
                           {(["new", "replied", "archived"] as ContactStatus[]).map((value) => (
-                            <form key={value} action={updateContactStatus} data-loading-mode="toast">
+                            <ToastForm key={value} action={updateContactStatus} loading="Đang cập nhật trạng thái...">
                               <input type="hidden" name="id" value={selected.id} />
                               <input type="hidden" name="status" value={value} />
                               <button
@@ -235,7 +236,7 @@ export default async function ContactMessagesPage({
                               >
                                 {STATUS_BADGE[value].label}
                               </button>
-                            </form>
+                            </ToastForm>
                           ))}
                         </div>
                       </div>
@@ -253,12 +254,12 @@ export default async function ContactMessagesPage({
 
                     {canDelete && (
                       <div className="border-t border-line pt-4">
-                        <form action={deleteContactMessage}>
+                        <ToastForm action={deleteContactMessage} loading="Đang xoá câu hỏi...">
                           <input type="hidden" name="id" value={selected.id} />
                           <ConfirmSubmit confirmText="Xoá vĩnh viễn câu hỏi này?">
                             <Trash2 size={15} /> Xoá câu hỏi
                           </ConfirmSubmit>
-                        </form>
+                        </ToastForm>
                         <p className="mt-2 text-xs text-ink/50">
                           Chỉ quản trị viên mới xoá được câu hỏi.
                         </p>

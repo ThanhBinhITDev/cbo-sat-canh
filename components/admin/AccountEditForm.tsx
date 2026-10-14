@@ -1,25 +1,29 @@
 "use client";
 
-import { useActionState } from "react";
+import { useState, useTransition, type FormEvent } from "react";
 import { Loader2, Save, UserCog } from "lucide-react";
-import { updateAccountProfile, type ActionState } from "@/lib/admin/actions";
-import { useGlobalLoading } from "@/lib/loading";
-import { useToastLoading, useToastResult } from "@/hooks/use-toast-loading";
+import { updateAccountProfile } from "@/lib/admin/actions";
+import { submitWithToast } from "@/lib/admin/submit-with-toast";
 import { ROLE_LABELS, type Profile } from "@/lib/types";
 import { Field } from "./ui";
 import AvatarPicker from "./AvatarPicker";
 
 export default function AccountEditForm({ profile }: { profile: Profile }) {
-  const [state, formAction, pending] = useActionState<ActionState | null, FormData>(
-    updateAccountProfile,
-    null,
-  );
-  useGlobalLoading(pending);
-  useToastLoading(pending, { loading: "Đang cập nhật thông tin tài khoản..." });
-  useToastResult(state);
+  const [pending, startTransition] = useTransition();
+  const [state, setState] = useState<{ ok: boolean; message?: string } | null>(null);
+  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setState(null);
+    const formData = new FormData(e.currentTarget);
+    startTransition(async () => {
+      setState(await submitWithToast(formData, updateAccountProfile, {
+        loading: "Đang cập nhật thông tin tài khoản...",
+      }));
+    });
+  };
 
   return (
-    <form action={formAction} data-loading-mode="toast" className="space-y-4">
+    <form onSubmit={onSubmit} className="space-y-4">
       <input type="hidden" name="id" value={profile.id} />
       <input
         type="hidden"

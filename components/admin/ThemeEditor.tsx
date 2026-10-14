@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, type CSSProperties } from "react";
+import { useState, type CSSProperties, type FormEvent } from "react";
 import { RotateCcw, Palette, CheckCircle2 } from "lucide-react";
 import { saveTheme } from "@/lib/admin/actions";
+import { submitWithToast } from "@/lib/admin/submit-with-toast";
 import { DEFAULT_THEME, THEME_PRESETS, type Theme } from "@/lib/theme";
 
 type Props = { initial: Theme };
@@ -37,7 +38,15 @@ export default function ThemeEditor({ initial }: Props) {
 
   return (
     <div className="grid gap-5 xl:grid-cols-[1.3fr,1fr]">
-      <form action={saveTheme} className="card p-5">
+      <form
+        onSubmit={(e: FormEvent<HTMLFormElement>) => {
+          e.preventDefault();
+          void submitWithToast(new FormData(e.currentTarget), saveTheme, {
+            loading: "Đang lưu giao diện...",
+          });
+        }}
+        className="card p-5"
+      >
         <div className="mb-4 flex items-center gap-2">
           <Palette size={18} className="text-primary" />
           <h2 className="text-base font-bold">Bảng màu</h2>

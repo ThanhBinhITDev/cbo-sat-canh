@@ -9,6 +9,7 @@ import {
 } from "@/components/admin/ui";
 import { ErrorState } from "@/components/admin/States";
 import ConfirmSubmit from "@/components/admin/ConfirmSubmit";
+import { ToastForm } from "@/components/admin/ProfileForms";
 import { getServicesAdmin } from "@/lib/admin/data";
 import { deleteService, saveService } from "@/lib/admin/actions";
 
@@ -104,14 +105,14 @@ export default async function ServicesAdminPage({
                             >
                               <Pencil size={15} />
                             </a>
-                            <form action={deleteService}>
+                            <ToastForm action={deleteService} loading="Đang xoá dịch vụ...">
                               <input type="hidden" name="id" value={row.id} />
                               <ConfirmSubmit
                                 confirmText={`Xoá dịch vụ "${row.title}"?`}
                               >
                                 <Trash2 size={15} />
                               </ConfirmSubmit>
-                            </form>
+                            </ToastForm>
                           </div>
                         </td>
                       </tr>
@@ -128,7 +129,7 @@ export default async function ServicesAdminPage({
                 title={editing ? "Sửa dịch vụ" : "Thêm dịch vụ"}
                 subtitle={editing ? "Cập nhật thông tin và thứ tự" : "Điền thông tin rồi bấm Lưu"}
               />
-              <form action={saveService} data-loading-mode="toast" className="space-y-4 p-5">
+              <ToastForm action={saveService} loading="Đang lưu dịch vụ..." className="space-y-4 p-5">
                 {editing && <input type="hidden" name="id" value={editing.id} />}
 
                 <Field label="Tên dịch vụ" required>
@@ -203,7 +204,7 @@ export default async function ServicesAdminPage({
                     Huỷ
                   </a>
                 </div>
-              </form>
+              </ToastForm>
             </Panel>
           )}
         </div>

@@ -1,22 +1,27 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useState, useTransition, type FormEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Loader2, ShieldAlert, ArrowLeft } from "lucide-react";
 import { signIn } from "@/app/admin/actions";
-import toast from "react-hot-toast";
-import { useToastLoading } from "@/hooks/use-toast-loading";
+import { submitWithToast } from "@/lib/admin/submit-with-toast";
 
 export default function LoginPanel({ logoSquareUrl }: { logoSquareUrl?: string | null }) {
-  const [state, formAction, pending] = useActionState(signIn, null);
-  useToastLoading(pending, { loading: "Đang đăng nhập..." });
-
-  useEffect(() => {
-    if (state?.error) {
-      toast.error(state.error, { duration: 5000 });
-    }
-  }, [state]);
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [state, setState] = useState<{ error?: string } | null>(null);
+  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setState(null);
+    const formData = new FormData(e.currentTarget);
+    startTransition(async () => {
+      const result = await submitWithToast(formData, signIn, { loading: "Đang đăng nhập..." });
+      if (result.ok) router.replace("/admin");
+      else setState({ error: result.message });
+    });
+  };
 
   return (
     <main className="grid min-h-screen place-items-center bg-muted px-5 py-10">
@@ -56,7 +61,7 @@ export default function LoginPanel({ logoSquareUrl }: { logoSquareUrl?: string |
               Dùng tài khoản được cấp để quản trị website.
             </p>
 
-            <form action={formAction} data-loading-mode="toast" className="space-y-4">
+            <form onSubmit={onSubmit} className="space-y-4">
               <label className="block">
                 <span className="mb-1.5 block text-sm font-semibold">
                   Email hoặc tên đăng nhập

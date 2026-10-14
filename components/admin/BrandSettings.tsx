@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ImagePlus, Link2, Save, Trash2 } from "lucide-react";
+import type { FormEvent } from "react";
 import { saveBrand } from "@/lib/admin/actions";
+import { submitWithToast } from "@/lib/admin/submit-with-toast";
 import {
   FALLBACK_LOGO_SQUARE,
   FALLBACK_LOGO_WIDE,
@@ -154,7 +156,15 @@ export default function BrandSettings({ initial }: Props) {
   }));
 
   return (
-    <form action={saveBrand} data-loading-mode="toast" className="card p-5">
+    <form
+      onSubmit={(e: FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        void submitWithToast(new FormData(e.currentTarget), saveBrand, {
+          loading: "Đang lưu thương hiệu...",
+        });
+      }}
+      className="card p-5"
+    >
       <div className="mb-1 flex items-center gap-2">
         <ImagePlus size={18} className="text-primary" />
         <h2 className="text-base font-bold">Thương hiệu — Logo &amp; Favicon</h2>

@@ -1,24 +1,29 @@
 "use client";
 
-import { useActionState } from "react";
+import { useState, useTransition, type FormEvent } from "react";
 import { Loader2, UserPlus, ShieldCheck } from "lucide-react";
-import { createAccount, type ActionState } from "@/lib/admin/actions";
-import { useGlobalLoading } from "@/lib/loading";
-import { useToastLoading, useToastResult } from "@/hooks/use-toast-loading";
+import { createAccount } from "@/lib/admin/actions";
+import { submitWithToast } from "@/lib/admin/submit-with-toast";
 import { ROLE_LABELS, type Role } from "@/lib/types";
 import { Field } from "./ui";
 
 export default function AccountCreateForm() {
-  const [state, formAction, pending] = useActionState<ActionState | null, FormData>(
-    createAccount,
-    null,
-  );
-  useGlobalLoading(pending);
-  useToastLoading(pending, { loading: "Đang tạo tài khoản..." });
-  useToastResult(state);
+  const [pending, startTransition] = useTransition();
+  const [state, setState] = useState<{ ok: boolean; message?: string } | null>(null);
+  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setState(null);
+    const formData = new FormData(e.currentTarget);
+    startTransition(async () => {
+      const result = await submitWithToast(formData, createAccount, {
+        loading: "Đang tạo tài khoản...",
+      });
+      setState(result);
+    });
+  };
 
   return (
-    <form action={formAction} data-loading-mode="toast" className="space-y-4">
+    <form onSubmit={onSubmit} className="space-y-4">
       <Field label="Họ và tên" required>
         <input name="full_name" required maxLength={150} className="input" placeholder="Nguyễn Văn A" />
       </Field>
