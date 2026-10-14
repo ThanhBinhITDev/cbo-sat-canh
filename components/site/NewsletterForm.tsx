@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Mail, Loader2, CheckCircle2 } from "lucide-react";
 import toast from "react-hot-toast";
+import { getToastRuntime } from "@/lib/toast-runtime";
 
 export default function NewsletterForm({ source = "footer" }: { source?: string }) {
   const [email, setEmail] = useState("");
@@ -35,13 +36,13 @@ export default function NewsletterForm({ source = "footer" }: { source?: string 
         ? "Bạn đã đăng ký nhận tin rồi. Cảm ơn bạn!"
         : "Đăng ký thành công. Cảm ơn bạn đã đồng hành!";
       setText(okMsg);
-      toast.success(okMsg, { id: t });
+      toast.success(okMsg, { id: t, duration: getToastRuntime().successDurationMs });
       setEmail("");
     } catch (err) {
       setStatus("error");
       const errMsg = err instanceof Error ? err.message : "Có lỗi xảy ra, vui lòng thử lại.";
       setText(errMsg);
-      toast.error(errMsg, { id: t });
+      toast.error(errMsg, { id: t, duration: getToastRuntime().errorDurationMs });
     }
   }
 

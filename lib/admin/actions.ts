@@ -26,6 +26,7 @@ import {
   type LoaderConfig,
 } from "@/lib/loader";
 import { storagePathFromPublicUrl } from "@/lib/avatar";
+import { normalizeToast, TOAST_POSITIONS, type ToastConfig, type ToastPosition } from "@/lib/toast";
 import type {
   ContactStatus,
   PostCategory,
@@ -766,6 +767,34 @@ export async function saveLoader(_prev: ActionState | null, formData: FormData):
   }
 
   return saveSetting("loader", next);
+}
+
+/* ------------------------------------------------------------------ *
+ * Thông báo toast
+ * ------------------------------------------------------------------ */
+
+export async function saveToast(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
+  try {
+    await requireRole(["admin"]);
+  } catch (e) {
+    return { ok: false, message: authMessage(e) };
+  }
+  const quota = await quotaBlock();
+  if (quota) return quota;
+
+  const posRaw = str(formData.get("position"));
+  const position = (TOAST_POSITIONS.map((p) => p.value) as string[]).includes(posRaw)
+    ? (posRaw as ToastPosition)
+    : "top-right";
+
+  const next: ToastConfig = normalizeToast({
+    position,
+    enabled: bool(formData.get("enabled")),
+    successDurationMs: num(formData.get("successDurationMs"), 4000),
+    errorDurationMs: num(formData.get("errorDurationMs"), 5000),
+  });
+
+  return saveSetting("toast", next);
 }
 
 /* ------------------------------------------------------------------ *

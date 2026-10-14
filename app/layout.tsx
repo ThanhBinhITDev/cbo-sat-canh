@@ -7,10 +7,12 @@ import { getSettings } from "@/lib/settings";
 import { normalizeTheme, themeToStyle } from "@/lib/theme";
 import { normalizeBrand } from "@/lib/brand";
 import { normalizeLoader } from "@/lib/loader";
+import { normalizeToast } from "@/lib/toast";
 import GlobalLoader from "@/components/site/GlobalLoader";
 import LoaderTriggers from "@/components/site/LoaderTriggers";
 import { Toaster } from "react-hot-toast";
 import FlashToast from "@/components/shared/FlashToast";
+import ToastConfigSync from "@/components/shared/ToastConfigSync";
 import { SITE_NAME, SITE_URL } from "@/lib/env";
 
 const beVietnam = Be_Vietnam_Pro({
@@ -86,6 +88,7 @@ export default async function RootLayout({
   const style = themeToStyle(theme);
   const loader = normalizeLoader(settings.loader);
   const loaderActive = loader.enabled;
+  const toastCfg = normalizeToast(settings.toast);
 
   return (
     <html
@@ -113,9 +116,14 @@ export default async function RootLayout({
       </head>
       <body className="min-h-full flex flex-col">
         <GlobalLoader config={loader} />
-        <Toaster containerClassName="z-[110]" position="top-right" />
+        <Toaster
+          containerClassName="z-[110]"
+          position={toastCfg.position}
+          toastOptions={{ duration: toastCfg.successDurationMs }}
+        />
+        <ToastConfigSync config={toastCfg} />
         <Suspense fallback={null}>
-          <FlashToast />
+          <FlashToast config={toastCfg} />
         </Suspense>
         <Suspense fallback={null}>
           <LoaderTriggers enabled={loaderActive} />

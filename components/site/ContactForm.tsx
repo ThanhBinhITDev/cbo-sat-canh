@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Send, Loader2, CheckCircle2, AlertCircle, MessageCircle } from "lucide-react";
 import toast from "react-hot-toast";
+import { getToastRuntime } from "@/lib/toast-runtime";
 import { SERVICE_OPTIONS } from "@/lib/types";
 import type { ContactInfo } from "@/lib/types";
 
@@ -79,7 +80,7 @@ export default function ContactForm({
       setState("ok");
       const okMsg = "Đã gửi. Chúng tôi sẽ liên hệ với bạn sớm nhất.";
       setMessage(okMsg);
-      toast.success(okMsg, { id: t });
+      toast.success(okMsg, { id: t, duration: getToastRuntime().successDurationMs });
       form.reset();
       window.setTimeout(() => setCooldown(false), 20_000);
     } catch (err) {
@@ -89,7 +90,7 @@ export default function ContactForm({
           ? err.message
           : "Có lỗi xảy ra. Vui lòng thử lại hoặc gọi 0967.206.095.";
       setMessage(errMsg);
-      toast.error(errMsg, { id: t });
+      toast.error(errMsg, { id: t, duration: getToastRuntime().errorDurationMs });
     }
   }
 

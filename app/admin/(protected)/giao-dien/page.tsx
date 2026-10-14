@@ -3,10 +3,12 @@ import { Flash, PageHeader } from "@/components/admin/ui";
 import ThemeEditor from "@/components/admin/ThemeEditor";
 import BrandSettings from "@/components/admin/BrandSettings";
 import LoaderSettings from "@/components/admin/LoaderSettings";
+import ToastSettings from "@/components/admin/ToastSettings";
 import { getSettings } from "@/lib/settings";
 import { normalizeTheme } from "@/lib/theme";
 import { normalizeBrand } from "@/lib/brand";
 import { normalizeLoader } from "@/lib/loader";
+import { normalizeToast } from "@/lib/toast";
 
 export default async function ThemeAdminPage({
   searchParams,
@@ -16,6 +18,7 @@ export default async function ThemeAdminPage({
   const theme = normalizeTheme(settings.theme);
   const brand = normalizeBrand(settings.brand);
   const loader = normalizeLoader(settings.loader);
+  const toastCfg = normalizeToast(settings.toast);
 
   return (
     <>
@@ -45,6 +48,8 @@ export default async function ThemeAdminPage({
       <BrandSettings key={JSON.stringify(brand)} initial={brand} />
       <div className="mt-5" />
       <LoaderSettings key={JSON.stringify(loader)} initial={loader} />
+      <div className="mt-5" />
+      <ToastSettings key={JSON.stringify(toastCfg)} initial={toastCfg} />
       <div className="mt-5" />
       <ThemeEditor initial={theme} />
     </>
