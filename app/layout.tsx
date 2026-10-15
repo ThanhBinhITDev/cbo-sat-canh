@@ -21,25 +21,6 @@ const beVietnam = Be_Vietnam_Pro({
   display: "swap",
 });
 
-/** Đọc localStorage trước khi React render → khách tự chỉnh màu không bị nhấp nháy. */
-const themeBootScript = `(function(){try{
-var o=localStorage.getItem('cbosc.theme.override');
-if(!o)return;
-var t=JSON.parse(o),r=document.documentElement.style,m={
-primary:'--brand-primary',dark:'--brand-dark',ink:'--brand-ink',
-surface:'--brand-surface',muted:'--brand-muted',accent:'--brand-accent',
-line:'--brand-line'};
-Object.keys(m).forEach(function(k){if(typeof t[k]==='string')r.setProperty(m[k],t[k]);});
-if(typeof t.radius==='number')r.setProperty('--brand-radius',t.radius+'px');
-if(typeof t.fontScale==='number')r.setProperty('--brand-font-scale',String(t.fontScale));
-}catch(e){}})();`;
-
-/** Đánh dấu để ẩn splash ngay từ đầu khi loader đã hiện trong phiên này. */
-const loaderBootScript = `(function(){try{
-if(sessionStorage.getItem('cbosc.loader.shown')==='1'){
-document.documentElement.setAttribute('data-loader-skip','');
-}}catch(e){}})();`;
-
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSettings();
   const seo = (settings.seo ?? {}) as { title?: string; description?: string };
@@ -97,10 +78,10 @@ export default async function RootLayout({
       data-scroll-behavior="smooth"
     >
       <head>
-        {/* Script thường (không dùng next/script) để chạy đồng bộ trước khi React render, tránh FOUC. */}
-        <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
+        {/* Script tĩnh đồng bộ (không inline, không async) để chạy trước khi React render, tránh FOUC. */}
+        <script dangerouslySetInnerHTML={{ __html: "(function(){try{var o=localStorage.getItem('cbosc.theme.override');if(!o)return;var t=JSON.parse(o),r=document.documentElement.style,m={primary:'--brand-primary',dark:'--brand-dark',ink:'--brand-ink',surface:'--brand-surface',muted:'--brand-muted',accent:'--brand-accent',line:'--brand-line'};Object.keys(m).forEach(function(k){if(typeof t[k]==='string')r.setProperty(m[k],t[k]);});if(typeof t.radius==='number')r.setProperty('--brand-radius',t.radius+'px');if(typeof t.fontScale==='number')r.setProperty('--brand-font-scale',String(t.fontScale));}catch(e){}})();" }} />
         {loaderActive && loader.oncePerSession && (
-          <script dangerouslySetInnerHTML={{ __html: loaderBootScript }} />
+          <script dangerouslySetInnerHTML={{ __html: "(function(){try{if(sessionStorage.getItem('cbosc.loader.shown')==='1'){document.documentElement.setAttribute('data-loader-skip','');}}catch(e){}})();" }} />
         )}
         {loaderActive && loader.imageUrl && (
           <link rel="preload" as="image" href={loader.imageUrl} />

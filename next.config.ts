@@ -10,6 +10,7 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "i.imgur.com" },
       { protocol: "https", hostname: "**.supabase.co" },
       { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "**.vnecdn.net" },
       // Avatar / logo dán từ Facebook
       { protocol: "https", hostname: "**.fbcdn.net" },
       { protocol: "https", hostname: "lookaside.fbsbx.com" },
