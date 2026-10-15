@@ -26,6 +26,8 @@ import {
   type LoaderConfig,
 } from "@/lib/loader";
 import { storagePathFromPublicUrl } from "@/lib/avatar";
+import { toDirectImageUrl } from "@/lib/drive-link";
+import { SUPABASE_URL } from "@/lib/env";
 import { cleanPostHtml, htmlToText } from "@/lib/sanitize";
 import { normalizeToast, TOAST_POSITIONS, type ToastConfig, type ToastPosition } from "@/lib/toast";
 import type {
@@ -192,6 +194,126 @@ async function assertWritable(path: string): Promise<void> {
 }
 
 /* ------------------------------------------------------------------ *
+ * Ảnh bìa bài viết
+ * ------------------------------------------------------------------ */
+
+const COVER_MAX_BYTES = 5 * 1024 * 1024;
+const COVER_TIMEOUT_MS = 12_000;
+
+function extFromMime(type: string): string | null {
+  const map: Record<string, string> = {
+    "image/png": "png",
+    "image/jpeg": "jpg",
+    "image/jpg": "jpg",
+    "image/webp": "webp",
+    "image/gif": "gif",
+    "image/avif": "avif",
+    "image/svg+xml": "svg",
+  };
+  return map[type] ?? null;
+}
+
+/**
+ * Đưa ảnh bìa từ link ngoài về Supabase Storage (không phụ thuộc bên thứ ba).
+ * - Rỗng, đường dẫn nội bộ (/...), hoặc ảnh đã ở Supabase của mình → giữ nguyên.
+ * - Tải thất bại (bị chặn, quá lớn, không phải ảnh...) → trả `error` để chặn lưu.
+ */
+async function rehostCover(
+  raw: string,
+  userId: string,
+): Promise<{ url: string | null; error?: string }> {
+  const value = raw.trim();
+  if (!value) return { url: null };
+  if (value.startsWith("/")) return { url: value };
+  if (!/^https?:\/\//i.test(value)) {
+    return {
+      url: null,
+      error: "Link ảnh bìa không hợp lệ. Vui lòng dán link http(s) hoặc tải ảnh lên.",
+    };
+  }
+
+  // Ảnh đã nằm trên Supabase của mình → không cần tải lại.
+  if (
+    SUPABASE_URL &&
+    value.includes(new URL(SUPABASE_URL).host) &&
+    value.includes("/storage/v1/object/public/site-assets/")
+  ) {
+    return { url: value };
+  }
+
+  const direct = toDirectImageUrl(value);
+  if (!direct) {
+    return {
+      url: null,
+      error: "Không nhận diện được ảnh từ link bìa. Vui lòng tải ảnh lên.",
+    };
+  }
+
+  const admin = createAdminClient();
+  if (!admin) {
+    return {
+      url: null,
+      error: "Thiếu SUPABASE_SECRET_KEY nên không tải được ảnh bìa về máy chủ.",
+    };
+  }
+
+  let res: Response;
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), COVER_TIMEOUT_MS);
+    try {
+      res = await fetch(direct, {
+        signal: controller.signal,
+        redirect: "follow",
+        headers: { "User-Agent": "CBOSatCanhBot/1.0 (+https://satcanh.angiang.vn)" },
+      });
+    } finally {
+      clearTimeout(timer);
+    }
+  } catch {
+    return {
+      url: null,
+      error: "Không tải được ảnh bìa từ link (quá thời gian hoặc bị chặn). Vui lòng tải ảnh lên.",
+    };
+  }
+
+  if (!res.ok) {
+    return {
+      url: null,
+      error: `Không tải được ảnh bìa (mã ${res.status}). Vui lòng tải ảnh lên.`,
+    };
+  }
+
+  const mime = (res.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase();
+  if (!mime.startsWith("image/")) {
+    return { url: null, error: "Link bìa không trỏ tới ảnh. Vui lòng tải ảnh lên." };
+  }
+  const ext = extFromMime(mime);
+  if (!ext) {
+    return { url: null, error: "Định dạng ảnh bìa không được hỗ trợ. Vui lòng tải ảnh lên." };
+  }
+
+  const declared = Number(res.headers.get("content-length") ?? "");
+  if (Number.isFinite(declared) && declared > COVER_MAX_BYTES) {
+    return { url: null, error: "Ảnh bìa lớn hơn 5MB. Vui lòng tải ảnh lên." };
+  }
+
+  const buf = Buffer.from(await res.arrayBuffer());
+  if (buf.byteLength > COVER_MAX_BYTES) {
+    return { url: null, error: "Ảnh bìa lớn hơn 5MB. Vui lòng tải ảnh lên." };
+  }
+
+  const key = `uploads/${userId}/cover-${Date.now()}.${ext}`;
+  const { error: up } = await admin.storage
+    .from("site-assets")
+    .upload(key, buf, { cacheControl: "3600", contentType: mime, upsert: false });
+  if (up) return { url: null, error: `Không lưu được ảnh bìa: ${up.message}` };
+
+  const { data } = admin.storage.from("site-assets").getPublicUrl(key);
+  return { url: data.publicUrl };
+}
+
+/* ------------------------------------------------------------------ *
  * Bài viết
  * ------------------------------------------------------------------ */
 
@@ -233,13 +355,34 @@ export async function savePost(
   const { data: dup } = await check.limit(1);
   if (dup?.length) slug = `${slug}-${Date.now().toString(36).slice(-4)}`;
 
+  // Ảnh bìa: bài cũ giữ nguyên cover → bỏ qua tải lại.
+  const rawCover = str(formData.get("cover_url"), 2000);
+  let existingCover: string | null = null;
+  if (id) {
+    const { data: current } = await supabase
+      .from("posts")
+      .select("cover_url")
+      .eq("id", id)
+      .maybeSingle();
+    existingCover = (current?.cover_url as string | null) ?? null;
+  }
+
+  let coverUrl: string | null;
+  if (rawCover && rawCover === existingCover) {
+    coverUrl = existingCover;
+  } else {
+    const cover = await rehostCover(rawCover, user.id);
+    if (cover.error) return { ok: false, message: cover.error };
+    coverUrl = cover.url;
+  }
+
   const row = {
     slug,
     title,
     excerpt: str(formData.get("excerpt"), 220) || null,
     content_html: contentHtml,
     content_md: null,
-    cover_url: str(formData.get("cover_url"), 2000) || null,
+    cover_url: coverUrl,
     category,
     status,
     is_featured: bool(formData.get("is_featured")),

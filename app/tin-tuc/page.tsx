@@ -6,15 +6,36 @@ import Footer from "@/components/site/Footer";
 import FloatingContact from "@/components/site/FloatingContact";
 import PostCard from "@/components/site/PostCard";
 import { getPosts } from "@/lib/content";
-import { getContent } from "@/lib/settings";
+import { getContent, absoluteUrl } from "@/lib/settings";
 import { CATEGORY_LABELS, type PostCategory } from "@/lib/types";
+import { ogImageUrl } from "@/lib/og";
+import { SITE_NAME } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 
+const TITLE = "Tin tức & Hoạt động";
+const DESCRIPTION =
+  "Tin tức, sự kiện và các hoạt động cộng đồng của Tổ chức Dựa vào Cộng đồng CBO Sát Cánh.";
+const OG_IMAGE = ogImageUrl({ title: TITLE, description: DESCRIPTION });
+
 export const metadata: Metadata = {
-  title: "Tin tức & Hoạt động",
-  description:
-    "Tin tức, sự kiện và các hoạt động cộng đồng của Tổ chức Dựa vào Cộng đồng CBO Sát Cánh.",
+  title: TITLE,
+  description: DESCRIPTION,
+  openGraph: {
+    type: "website",
+    locale: "vi_VN",
+    siteName: SITE_NAME,
+    title: TITLE,
+    description: DESCRIPTION,
+    url: absoluteUrl("/tin-tuc"),
+    images: [{ url: OG_IMAGE, alt: TITLE }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+    images: [{ url: OG_IMAGE, alt: TITLE }],
+  },
 };
 
 const FILTERS = [

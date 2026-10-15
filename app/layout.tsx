@@ -12,6 +12,7 @@ import LoaderTriggers from "@/components/site/LoaderTriggers";
 import { Toaster } from "react-hot-toast";
 import FlashToast from "@/components/shared/FlashToast";
 import ToastConfigSync from "@/components/shared/ToastConfigSync";
+import { ogImageUrl } from "@/lib/og";
 import { SITE_NAME, SITE_URL } from "@/lib/env";
 
 const beVietnam = Be_Vietnam_Pro({
@@ -54,8 +55,14 @@ export async function generateMetadata(): Promise<Metadata> {
       title,
       description,
       url: SITE_URL,
+      images: [{ url: ogImageUrl({ title, description }), alt: title }],
     },
-    twitter: { card: "summary_large_image", title, description },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [{ url: ogImageUrl({ title, description }), alt: title }],
+    },
     robots: { index: true, follow: true },
   };
 }

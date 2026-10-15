@@ -15,6 +15,7 @@ import { getContent, absoluteUrl } from "@/lib/settings";
 import { CATEGORY_LABELS } from "@/lib/types";
 import { SITE_NAME } from "@/lib/env";
 import { cleanPostHtml, htmlToText } from "@/lib/sanitize";
+import { ogImageUrl } from "@/lib/og";
 import CopyLinkButton from "@/components/site/CopyLinkButton";
 
 export const dynamic = "force-dynamic";
@@ -36,18 +37,28 @@ export async function generateMetadata({
     post.excerpt ||
     `${SITE_NAME} — tin tức và hoạt động cộng đồng`;
 
+  // Có ảnh bìa → dùng ảnh thật; không có → sinh ảnh động kèm tiêu đề + mô tả.
+  const imageUrl = post.cover_url
+    ? post.cover_url.startsWith("http")
+      ? post.cover_url
+      : absoluteUrl(post.cover_url)
+    : ogImageUrl({
+        title: post.title,
+        description: post.excerpt || description,
+        category: CATEGORY_LABELS[post.category] ?? null,
+      });
+
   return {
     title,
     description,
     openGraph: {
       type: "article",
       locale: "vi_VN",
+      siteName: SITE_NAME,
       title,
       description,
       url: absoluteUrl(`/tin-tuc/${post.slug}`),
-      images: post.cover_url
-        ? [{ url: post.cover_url.startsWith("http") ? post.cover_url : absoluteUrl(post.cover_url) }]
-        : undefined,
+      images: [{ url: imageUrl, alt: post.title }],
       publishedTime: post.published_at ?? undefined,
       authors: post.author?.full_name ? [post.author.full_name] : undefined,
     },
@@ -55,9 +66,7 @@ export async function generateMetadata({
       card: "summary_large_image",
       title,
       description,
-      images: post.cover_url
-        ? [post.cover_url.startsWith("http") ? post.cover_url : absoluteUrl(post.cover_url)]
-        : undefined,
+      images: [{ url: imageUrl, alt: post.title }],
     },
   };
 }

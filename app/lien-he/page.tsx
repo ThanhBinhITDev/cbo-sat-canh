@@ -5,15 +5,36 @@ import FloatingContact from "@/components/site/FloatingContact";
 import ContactForm from "@/components/site/ContactForm";
 import MapContactSection from "@/components/site/MapContactSection";
 import SectionHeading from "@/components/site/SectionHeading";
-import { getContent } from "@/lib/settings";
+import { getContent, absoluteUrl } from "@/lib/settings";
 import { SERVICE_OPTIONS } from "@/lib/types";
+import { ogImageUrl } from "@/lib/og";
+import { SITE_NAME } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 
+const TITLE = "Liên hệ & Tư vấn";
+const DESCRIPTION =
+  "Liên hệ CBO Sát Cánh để được tư vấn miễn phí về xét nghiệm HIV/STIs, PrEP, PEP và chuyển gửi điều trị ARV.";
+const OG_IMAGE = ogImageUrl({ title: TITLE, description: DESCRIPTION });
+
 export const metadata: Metadata = {
-  title: "Liên hệ & Tư vấn",
-  description:
-    "Liên hệ CBO Sát Cánh để được tư vấn miễn phí về xét nghiệm HIV/STIs, PrEP, PEP và chuyển gửi điều trị ARV.",
+  title: TITLE,
+  description: DESCRIPTION,
+  openGraph: {
+    type: "website",
+    locale: "vi_VN",
+    siteName: SITE_NAME,
+    title: TITLE,
+    description: DESCRIPTION,
+    url: absoluteUrl("/lien-he"),
+    images: [{ url: OG_IMAGE, alt: TITLE }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+    images: [{ url: OG_IMAGE, alt: TITLE }],
+  },
 };
 
 /** Đánh giá dịch vụ từ query ?dich-vu=slug → chọn sẵn trong dropdown. */
