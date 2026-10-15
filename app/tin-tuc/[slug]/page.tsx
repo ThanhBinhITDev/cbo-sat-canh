@@ -160,7 +160,7 @@ export default async function PostPage({ params }: PageProps<"/tin-tuc/[slug]">)
           </div>
         </div>
 
-        <article className="pb-16 pt-8 sm:pt-10">
+        <article className="pb-16 pt-10 sm:pt-12">
           <div className="container-site">
             <div className="mx-auto w-full max-w-[52rem]">
               <h1 className="text-[clamp(1.6rem,4vw,2.6rem)] font-extrabold leading-tight">
