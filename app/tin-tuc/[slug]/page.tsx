@@ -99,103 +99,109 @@ export default async function PostPage({ params }: PageProps<"/tin-tuc/[slug]">)
     <>
       <Header header={content.header} logoUrl={content.brand.logoWide} />
       <main className="flex-1 pt-0">
-        <div
-          className="border-b border-line"
-          style={{ background: "var(--brand-muted)" }}
-        >
-          <div className="container-site py-8">
-            <nav className="mb-5 flex flex-wrap items-center gap-1.5 text-sm text-ink/60">
-              <Link href="/" className="transition hover:text-primary">
-                Trang chủ
-              </Link>
-              <span>/</span>
-              <Link href="/tin-tuc" className="transition hover:text-primary">
-                Tin tức
-              </Link>
-              <span>/</span>
-              <span className="line-clamp-1 max-w-[16rem] text-ink">
-                {post.title}
-              </span>
-            </nav>
-
-            <span
-              className="mb-4 inline-block rounded-full px-3 py-1 text-xs font-bold text-white"
-              style={{ background: "var(--brand-primary)" }}
-            >
-              {CATEGORY_LABELS[post.category] ?? "Tin tức"}
-            </span>
-
-            <h1 className="max-w-4xl text-[clamp(1.6rem,4vw,2.6rem)] font-extrabold leading-tight">
-              {post.title}
-            </h1>
-
-            {post.excerpt && (
-              <p className="mt-4 max-w-3xl text-lg leading-relaxed text-ink/75">
-                {post.excerpt}
-              </p>
-            )}
-
-            <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-ink/65">
-              {published && (
-                <span className="inline-flex items-center gap-1.5">
-                  <CalendarDays size={15} /> {published}
+        <div style={{ background: "var(--brand-muted)" }}>
+          <div className="border-b border-line">
+            <div className="container-site py-6">
+              <nav className="flex flex-wrap items-center gap-1.5 text-sm text-ink/60">
+                <Link href="/" className="transition hover:text-primary">
+                  Trang chủ
+                </Link>
+                <span>/</span>
+                <Link href="/tin-tuc" className="transition hover:text-primary">
+                  Tin tức
+                </Link>
+                <span>/</span>
+                <span className="line-clamp-1 max-w-[16rem] text-ink">
+                  {post.title}
                 </span>
-              )}
-              {post.author?.full_name && (
-                <PostAuthor
-                  name={post.author.full_name}
-                  avatarUrl={post.author.avatar_url}
-                  size="md"
-                />
-              )}
-              {readMinutes > 0 && (
-                <span className="inline-flex items-center gap-1.5">
-                  <Clock size={15} /> {readMinutes} phút đọc
-                </span>
-              )}
-              <span className="flex items-center gap-2">
-                <a
-                  href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 font-semibold text-primary transition hover:gap-2.5"
+              </nav>
+
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+                <span
+                  className="inline-block rounded-full px-3 py-1 text-xs font-bold text-white"
+                  style={{ background: "var(--brand-primary)" }}
                 >
-                  <FacebookIcon size={15} /> Chia sẻ
-                </a>
-                <CopyLinkButton url={url} />
-              </span>
+                  {CATEGORY_LABELS[post.category] ?? "Tin tức"}
+                </span>
+
+                <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-ink/65">
+                  {published && (
+                    <span className="inline-flex items-center gap-1.5">
+                      <CalendarDays size={15} /> {published}
+                    </span>
+                  )}
+                  {post.author?.full_name && (
+                    <PostAuthor
+                      name={post.author.full_name}
+                      avatarUrl={post.author.avatar_url}
+                      size="md"
+                    />
+                  )}
+                  {readMinutes > 0 && (
+                    <span className="inline-flex items-center gap-1.5">
+                      <Clock size={15} /> {readMinutes} phút đọc
+                    </span>
+                  )}
+                  <span className="flex items-center gap-2">
+                    <a
+                      href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 font-semibold text-primary transition hover:gap-2.5"
+                    >
+                      <FacebookIcon size={15} /> Chia sẻ
+                    </a>
+                    <CopyLinkButton url={url} />
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
+
+          <article className="section">
+            <div className="container-site">
+              <div className="mx-auto w-full max-w-[46rem] rounded-card border border-line bg-surface px-5 py-8 shadow-[0_12px_40px_-24px_rgba(15,23,42,0.28)] sm:px-12 sm:py-14">
+                <h1 className="text-[clamp(1.6rem,4vw,2.6rem)] font-extrabold leading-tight">
+                  {post.title}
+                </h1>
+
+                {post.excerpt && (
+                  <p className="mt-4 text-lg leading-relaxed text-ink/75">
+                    {post.excerpt}
+                  </p>
+                )}
+
+                <div className="my-7 h-px bg-line" />
+
+                {post.content_html ? (
+                  <div
+                    className="prose-post"
+                    dangerouslySetInnerHTML={{ __html: cleanPostHtml(post.content_html) }}
+                  />
+                ) : (
+                  <div className="prose-post">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {post.content_md ?? ""}
+                    </ReactMarkdown>
+                  </div>
+                )}
+
+                <Link
+                  href="/tin-tuc"
+                  className="mt-10 inline-flex items-center gap-2 text-sm font-bold text-primary transition hover:gap-3"
+                >
+                  <ArrowLeft size={16} /> Quay lại danh sách tin tức
+                </Link>
+              </div>
+            </div>
+          </article>
         </div>
 
-        <article className="section bg-surface">
-          <div className="container-site">
-            <div className="mx-auto max-w-3xl">
-              {post.content_html ? (
-                <div
-                  className="prose-post"
-                  dangerouslySetInnerHTML={{ __html: cleanPostHtml(post.content_html) }}
-                />
-              ) : (
-                <div className="prose-post">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {post.content_md ?? ""}
-                  </ReactMarkdown>
-                </div>
-              )}
-
-              <Link
-                href="/tin-tuc"
-                className="mt-10 inline-flex items-center gap-2 text-sm font-bold text-primary transition hover:gap-3"
-              >
-                <ArrowLeft size={16} /> Quay lại danh sách tin tức
-              </Link>
-            </div>
-          </div>
-        </article>
-
         {siblings.length > 0 && (
-          <section className="section" style={{ background: "var(--brand-muted)" }}>
+          <section
+            className="section border-t border-line"
+            style={{ background: "var(--brand-muted)" }}
+          >
             <div className="container-site">
               <h2 className="section-title mb-8 text-center">Bài viết liên quan</h2>
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
