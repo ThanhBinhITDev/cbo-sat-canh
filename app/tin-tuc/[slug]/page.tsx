@@ -4,16 +4,18 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { ArrowLeft, CalendarDays, UserRound } from "lucide-react";
+import { ArrowLeft, CalendarDays, Clock } from "lucide-react";
 import { FacebookIcon } from "@/components/site/BrandIcons";
 import Header from "@/components/site/Header";
 import Footer from "@/components/site/Footer";
 import FloatingContact from "@/components/site/FloatingContact";
 import PostCard from "@/components/site/PostCard";
+import PostAuthor from "@/components/site/PostAuthor";
 import { getPostBySlug, getPosts } from "@/lib/content";
 import { getContent, absoluteUrl } from "@/lib/settings";
 import { CATEGORY_LABELS } from "@/lib/types";
 import { SITE_NAME } from "@/lib/env";
+import { cleanPostHtml, htmlToText } from "@/lib/sanitize";
 import CopyLinkButton from "@/components/site/CopyLinkButton";
 
 export const dynamic = "force-dynamic";
@@ -77,6 +79,10 @@ export default async function PostPage({ params }: PageProps<"/tin-tuc/[slug]">)
       })
     : "";
 
+  const bodyText = post.content_html ? htmlToText(post.content_html) : (post.content_md ?? "");
+  const wordCount = bodyText ? bodyText.split(/\s+/).filter(Boolean).length : 0;
+  const readMinutes = wordCount ? Math.max(1, Math.round(wordCount / 200)) : 0;
+
   return (
     <>
       <Header header={content.header} logoUrl={content.brand.logoWide} />
@@ -118,8 +124,15 @@ export default async function PostPage({ params }: PageProps<"/tin-tuc/[slug]">)
                 </span>
               )}
               {post.author?.full_name && (
+                <PostAuthor
+                  name={post.author.full_name}
+                  avatarUrl={post.author.avatar_url}
+                  size="md"
+                />
+              )}
+              {readMinutes > 0 && (
                 <span className="inline-flex items-center gap-1.5">
-                  <UserRound size={15} /> {post.author.full_name}
+                  <Clock size={15} /> {readMinutes} phút đọc
                 </span>
               )}
               <span className="flex items-center gap-2">
@@ -153,11 +166,31 @@ export default async function PostPage({ params }: PageProps<"/tin-tuc/[slug]">)
                 </div>
               )}
 
-              <div className="prose-post">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {post.content_md ?? ""}
-                </ReactMarkdown>
-              </div>
+              {post.content_html ? (
+                <div
+                  className="prose-post"
+                  dangerouslySetInnerHTML={{ __html: cleanPostHtml(post.content_html) }}
+                />
+              ) : (
+                <div className="prose-post">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {post.content_md ?? ""}
+                  </ReactMarkdown>
+                </div>
+              )}
+
+              {post.author?.full_name && (
+                <aside className="mt-10 rounded-2xl border border-line bg-muted p-5">
+                  <p className="mb-3 text-xs font-bold uppercase tracking-wide text-ink/55">
+                    Về tác giả
+                  </p>
+                  <PostAuthor
+                    name={post.author.full_name}
+                    avatarUrl={post.author.avatar_url}
+                    size="lg"
+                  />
+                </aside>
+              )}
 
               <Link
                 href="/tin-tuc"

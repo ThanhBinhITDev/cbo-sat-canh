@@ -3,6 +3,7 @@ import Image from "next/image";
 import { CalendarDays, ArrowRight } from "lucide-react";
 import { CATEGORY_LABELS, type PostCategory } from "@/lib/types";
 import type { PostListItem } from "@/lib/content";
+import PostAuthor from "./PostAuthor";
 
 export function formatDate(value: string | null) {
   if (!value) return "";
@@ -45,10 +46,19 @@ export default function PostCard({
       </Link>
 
       <div className="flex flex-1 flex-col p-5">
-        <p className="mb-2 flex items-center gap-1.5 text-xs text-ink/60">
-          <CalendarDays size={13} /> {formatDate(post.published_at)}
-          {post.author_name ? <span>· {post.author_name}</span> : null}
-        </p>
+        <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink/60">
+          <span className="inline-flex items-center gap-1.5">
+            <CalendarDays size={13} /> {formatDate(post.published_at)}
+          </span>
+          {post.author_name ? (
+            <PostAuthor
+              name={post.author_name}
+              avatarUrl={post.author_avatar_url}
+              size="sm"
+              className="[&>span:last-child]:font-medium [&>span:last-child]:text-ink/70 text-xs"
+            />
+          ) : null}
+        </div>
         <h3 className="mb-2 text-lg font-bold leading-snug text-primary-dark">
           <Link href={`/tin-tuc/${post.slug}`} className="transition group-hover:text-primary">
             {post.title}

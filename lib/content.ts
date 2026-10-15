@@ -187,10 +187,10 @@ export type PostListItem = Pick<
   | "category"
   | "published_at"
   | "is_featured"
-> & { author_name?: string | null };
+> & { author_name?: string | null; author_avatar_url?: string | null };
 
 const POST_SELECT =
-  "id, slug, title, excerpt, cover_url, category, published_at, is_featured, profiles(full_name)";
+  "id, slug, title, excerpt, cover_url, category, published_at, is_featured, author_id";
 
 export async function getPosts(options?: {
   category?: string;
@@ -223,8 +223,28 @@ export async function getPosts(options?: {
   const { data, error } = await query;
   if (error || !data) return [];
 
-  return (data as unknown as (PostListItem & { profiles: { full_name: string } | null })[]).map(
-    (row) => ({
+  const rows = data as unknown as (PostListItem & { author_id: string | null })[];
+  const authorIds = [
+    ...new Set(rows.map((r) => r.author_id).filter((v): v is string => Boolean(v))),
+  ];
+  const authors = new Map<string, { full_name: string; avatar_url: string | null }>();
+  if (authorIds.length) {
+    const { data: profs } = await supabase
+      .from("public_authors")
+      .select("id, full_name, avatar_url")
+      .in("id", authorIds);
+    for (const p of (profs ?? []) as {
+      id: string;
+      full_name: string;
+      avatar_url: string | null;
+    }[]) {
+      authors.set(p.id, { full_name: p.full_name, avatar_url: p.avatar_url });
+    }
+  }
+
+  return rows.map((row) => {
+    const author = row.author_id ? authors.get(row.author_id) : undefined;
+    return {
       id: row.id,
       slug: row.slug,
       title: row.title,
@@ -233,9 +253,10 @@ export async function getPosts(options?: {
       category: row.category,
       published_at: row.published_at,
       is_featured: row.is_featured,
-      author_name: row.profiles?.full_name ?? null,
-    }),
-  );
+      author_name: author?.full_name ?? null,
+      author_avatar_url: author?.avatar_url ?? null,
+    };
+  });
 }
 
 export async function getPostBySlug(slug: string): Promise<Post | null> {
@@ -244,12 +265,23 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
 
   const { data } = await supabase
     .from("posts")
-    .select("*, profiles(full_name)")
+    .select("*")
     .eq("slug", slug)
     .eq("status", "published")
     .maybeSingle();
 
   if (!data) return null;
-  const row = data as Post & { profiles: { full_name: string } | null };
-  return { ...row, author: row.profiles };
+  const row = data as Post;
+
+  let author: { full_name: string; avatar_url: string | null } | null = null;
+  if (row.author_id) {
+    const { data: prof } = await supabase
+      .from("public_authors")
+      .select("full_name, avatar_url")
+      .eq("id", row.author_id)
+      .maybeSingle();
+    author = (prof as { full_name: string; avatar_url: string | null } | null) ?? null;
+  }
+
+  return { ...row, author };
 }

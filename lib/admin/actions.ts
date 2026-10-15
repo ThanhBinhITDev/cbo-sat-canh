@@ -26,6 +26,7 @@ import {
   type LoaderConfig,
 } from "@/lib/loader";
 import { storagePathFromPublicUrl } from "@/lib/avatar";
+import { cleanPostHtml, htmlToText } from "@/lib/sanitize";
 import { normalizeToast, TOAST_POSITIONS, type ToastConfig, type ToastPosition } from "@/lib/toast";
 import type {
   ContactStatus,
@@ -79,6 +80,24 @@ async function run(fn: () => Promise<unknown>): Promise<ActionState> {
   } catch (e) {
     if (e instanceof ActionDone) return { ok: e.ok, message: e.message };
     throw e;
+  }
+}
+
+/**
+ * Bọc action trả ActionState: lỗi bất ngờ (mạng, Storage, DB) thành thông báo
+ * thay vì văng ra error boundary làm trang trắng.
+ */
+async function safeAction(
+  label: string,
+  fn: () => Promise<ActionState>,
+): Promise<ActionState> {
+  try {
+    return await fn();
+  } catch (e) {
+    if (e instanceof ActionDone) return { ok: e.ok, message: e.message };
+    const detail = e instanceof Error ? e.message : String(e);
+    console.error(`[admin:${label}]`, e);
+    return { ok: false, message: `Có lỗi khi ${label}: ${detail.slice(0, 200)}` };
   }
 }
 
@@ -192,12 +211,12 @@ export async function savePost(
   if (!supabase) return { ok: false, message: "Chưa cấu hình Supabase (thiếu .env.local)." };
 
   const title = str(formData.get("title"), 300);
-  const contentMd = str(formData.get("content_md"), 200_000);
+  const contentHtml = cleanPostHtml(str(formData.get("content_html"), 200_000));
   const category = str(formData.get("category")) as PostCategory;
   const status = str(formData.get("status")) as PostStatus;
 
   if (!title) return { ok: false, message: "Vui lòng nhập tiêu đề." };
-  if (!contentMd) return { ok: false, message: "Vui lòng nhập nội dung bài viết." };
+  if (!htmlToText(contentHtml)) return { ok: false, message: "Vui lòng nhập nội dung bài viết." };
   if (!["tin-tuc", "hoat-dong"].includes(category)) {
     return { ok: false, message: "Danh mục không hợp lệ." };
   }
@@ -218,7 +237,8 @@ export async function savePost(
     slug,
     title,
     excerpt: str(formData.get("excerpt"), 220) || null,
-    content_md: contentMd,
+    content_html: contentHtml,
+    content_md: null,
     cover_url: str(formData.get("cover_url"), 2000) || null,
     category,
     status,
@@ -576,6 +596,10 @@ export async function saveContentSection(_prev: ActionState | null, formData: Fo
 }
 
 export async function saveTheme(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
+  return safeAction("lưu giao diện", () => saveThemeInner(formData));
+}
+
+async function saveThemeInner(formData: FormData): Promise<ActionState> {
   try {
     await requireRole(["admin"]);
   } catch (e) {
@@ -601,6 +625,10 @@ export async function saveTheme(_prev: ActionState | null, formData: FormData): 
 }
 
 export async function saveBrand(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
+  return safeAction("lưu thương hiệu", () => saveBrandInner(formData));
+}
+
+async function saveBrandInner(formData: FormData): Promise<ActionState> {
   try {
     await requireRole(["admin"]);
   } catch (e) {
@@ -691,6 +719,10 @@ export async function saveBrand(_prev: ActionState | null, formData: FormData): 
  * ------------------------------------------------------------------ */
 
 export async function saveLoader(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
+  return safeAction("lưu màn hình chờ", () => saveLoaderInner(formData));
+}
+
+async function saveLoaderInner(formData: FormData): Promise<ActionState> {
   try {
     await requireRole(["admin"]);
   } catch (e) {

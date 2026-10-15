@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Be_Vietnam_Pro } from "next/font/google";
-import Script from "next/script";
 import "./globals.css";
 import { getSettings } from "@/lib/settings";
 import { normalizeTheme, themeToStyle } from "@/lib/theme";
@@ -98,17 +97,10 @@ export default async function RootLayout({
       data-scroll-behavior="smooth"
     >
       <head>
-        <Script
-          id="theme-boot"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{ __html: themeBootScript }}
-        />
+        {/* Script thường (không dùng next/script) để chạy đồng bộ trước khi React render, tránh FOUC. */}
+        <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
         {loaderActive && loader.oncePerSession && (
-          <Script
-            id="loader-boot"
-            strategy="beforeInteractive"
-            dangerouslySetInnerHTML={{ __html: loaderBootScript }}
-          />
+          <script dangerouslySetInnerHTML={{ __html: loaderBootScript }} />
         )}
         {loaderActive && loader.imageUrl && (
           <link rel="preload" as="image" href={loader.imageUrl} />

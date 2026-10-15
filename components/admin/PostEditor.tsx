@@ -1,39 +1,17 @@
 "use client";
 
-import { useMemo, useRef, useState, useTransition, type FormEvent } from "react";
+import { useMemo, useState, useTransition, type FormEvent } from "react";
 import Link from "next/link";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import {
-  Bold,
-  Italic,
-  Heading2,
-  List,
-  ListOrdered,
-  Quote,
-  Link2,
-  ImageIcon,
-  Eye,
-  Save,
-} from "lucide-react";
+import { Save, ImageIcon, X } from "lucide-react";
 import { savePost } from "@/lib/admin/actions";
 import { submitWithToast } from "@/lib/admin/submit-with-toast";
 import { slugify } from "@/lib/slug";
 import { CATEGORY_LABELS, type Post } from "@/lib/types";
 import { BackLink, Field } from "./ui";
+import RichTextEditor from "./RichTextEditor";
+import ImageDialog from "./ImageDialog";
 
 type Props = { post?: Post | null };
-
-const TOOLBAR = [
-  { icon: <Bold size={16} />, label: "Đậm", wrap: ["**", "**"] },
-  { icon: <Italic size={16} />, label: "Nghiêng", wrap: ["_", "_"] },
-  { icon: <Heading2 size={16} />, label: "Tiêu đề", wrap: ["\n## ", ""] },
-  { icon: <List size={16} />, label: "Danh sách", wrap: ["\n- ", ""] },
-  { icon: <ListOrdered size={16} />, label: "Danh sách số", wrap: ["\n1. ", ""] },
-  { icon: <Quote size={16} />, label: "Trích dẫn", wrap: ["\n> ", ""] },
-  { icon: <Link2 size={16} />, label: "Liên kết", wrap: ["[", "](https://)"] },
-  { icon: <ImageIcon size={16} />, label: "Ảnh", wrap: ["![alt](https://", ")"] },
-] as const;
 
 export default function PostEditor({ post }: Props) {
   const [pending, startTransition] = useTransition();
@@ -42,6 +20,10 @@ export default function PostEditor({ post }: Props) {
     e.preventDefault();
     setState(null);
     const formData = new FormData(e.currentTarget);
+    const submitter = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+    if (submitter?.name && submitter.value) {
+      formData.set(submitter.name, submitter.value);
+    }
     startTransition(async () => {
       setState(await submitWithToast(formData, savePost, { loading: "Đang lưu bài viết..." }));
     });
@@ -50,30 +32,13 @@ export default function PostEditor({ post }: Props) {
   const [title, setTitle] = useState(post?.title ?? "");
   const [slug, setSlug] = useState(post?.slug ?? "");
   const [slugTouched, setSlugTouched] = useState(Boolean(post));
-  const [content, setContent] = useState(post?.content_md ?? "");
-  const [preview, setPreview] = useState(false);
-
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [cover, setCover] = useState(post?.cover_url ?? "");
+  const [coverOpen, setCoverOpen] = useState(false);
 
   const effectiveSlug = useMemo(() => {
     if (slugTouched) return slug;
     return slugify(title);
   }, [slug, slugTouched, title]);
-
-  function wrapSelection(before: string, after: string) {
-    const el = textareaRef.current;
-    if (!el) return;
-    const start = el.selectionStart;
-    const end = el.selectionEnd;
-    const selected = content.slice(start, end) || "văn bản";
-    const next = content.slice(0, start) + before + selected + after + content.slice(end);
-    setContent(next);
-    requestAnimationFrame(() => {
-      el.focus();
-      const caret = start + before.length + selected.length;
-      el.setSelectionRange(caret, caret);
-    });
-  }
 
   const isPublished = post?.status === "published";
 
@@ -149,15 +114,40 @@ export default function PostEditor({ post }: Props) {
               </select>
             </Field>
 
-            <Field label="Ảnh bìa" hint="Dán URL ảnh (Google Drive hoặc dịch vụ lưu trữ)">
-              <input
-                name="cover_url"
-                defaultValue={post?.cover_url ?? ""}
-                placeholder="https://..."
-                className="input"
-              />
+            <Field label="Ảnh bìa" hint="Dán URL hoặc tải ảnh lên">
+              <input type="hidden" name="cover_url" value={cover} />
+              <div className="flex gap-2">
+                <input
+                  value={cover}
+                  onChange={(e) => setCover(e.target.value)}
+                  placeholder="https://..."
+                  className="input"
+                />
+                <button
+                  type="button"
+                  onClick={() => setCoverOpen(true)}
+                  className="btn btn-ghost shrink-0 px-3 text-xs"
+                >
+                  <ImageIcon size={15} /> Tải ảnh
+                </button>
+              </div>
             </Field>
           </div>
+
+          {cover && (
+            <div className="relative w-full max-w-sm overflow-hidden rounded-xl border border-line bg-muted">
+              {/* eslint-disable-next-line @next/next/no-img-element -- xem trước ảnh bìa từ liên kết ngoài */}
+              <img src={cover} alt="Xem trước ảnh bìa" className="aspect-[16/9] w-full object-cover" />
+              <button
+                type="button"
+                onClick={() => setCover("")}
+                aria-label="Xoá ảnh bìa"
+                className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full bg-black/60 text-white transition hover:bg-black/80"
+              >
+                <X size={15} />
+              </button>
+            </div>
+          )}
 
           <Field label="Tóm tắt" hint="Tối đa 220 ký tự — hiển thị ở thẻ danh sách.">
             <textarea
@@ -172,56 +162,13 @@ export default function PostEditor({ post }: Props) {
 
           {/* Trình soạn thảo */}
           <div>
-            <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
-              <span className="field-label !mb-0">
-                Nội dung <span className="text-red-500">*</span>
-              </span>
-              <div className="flex items-center gap-1">
-                <div className="flex flex-wrap gap-1 rounded-xl border border-line bg-muted p-1">
-                  {TOOLBAR.map((item) => (
-                    <button
-                      key={item.label}
-                      type="button"
-                      title={item.label}
-                      onClick={() => wrapSelection(item.wrap[0], item.wrap[1])}
-                      className="grid h-8 w-8 place-items-center rounded-lg text-ink/65 transition hover:bg-white hover:text-primary"
-                    >
-                      {item.icon}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setPreview((v) => !v)}
-                  className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition ${
-                    preview
-                      ? "border-primary bg-primary text-white"
-                      : "border-line text-ink/70 hover:border-primary hover:text-primary"
-                  }`}
-                >
-                  <Eye size={15} /> {preview ? "Soạn" : "Xem thử"}
-                </button>
-              </div>
-            </div>
-
-            <input type="hidden" name="content_md" value={content} />
-
-            {preview ? (
-              <div className="prose-post max-h-[32rem] overflow-y-auto rounded-2xl border border-line bg-muted p-5">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {content || "_Chưa có nội dung._"}
-                </ReactMarkdown>
-              </div>
-            ) : (
-              <textarea
-                ref={textareaRef}
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                rows={18}
-                placeholder="Soạn nội dung Markdown ở đây..."
-                className="textarea font-mono !text-sm"
-              />
-            )}
+            <span className="field-label">
+              Nội dung <span className="text-red-500">*</span>
+            </span>
+            <RichTextEditor name="content_html" defaultValue={post?.content_html ?? ""} />
+            <span className="hint">
+              Mẹo: dán liên kết ảnh (Google Drive, Imgur...) vào nội dung để chèn ảnh nhanh.
+            </span>
           </div>
         </div>
 
@@ -310,6 +257,16 @@ export default function PostEditor({ post }: Props) {
           </div>
         </div>
       </form>
+
+      <ImageDialog
+        open={coverOpen}
+        title="Chọn ảnh bìa"
+        onClose={() => setCoverOpen(false)}
+        onInsert={(url) => {
+          setCover(url);
+          setCoverOpen(false);
+        }}
+      />
     </div>
   );
 }

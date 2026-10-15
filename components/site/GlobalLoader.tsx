@@ -92,7 +92,7 @@ export default function GlobalLoader({ config }: { config: LoaderConfig }) {
             src={config.imageUrl}
             alt=""
             aria-hidden
-            className="h-auto max-h-[45vh] w-auto max-w-[70vw] object-contain"
+            className="h-auto max-h-[24vh] w-auto max-w-[38vw] object-contain"
           />
           {label && (
             <p className="max-w-[80vw] text-balance text-base font-semibold text-ink/70 sm:text-lg">

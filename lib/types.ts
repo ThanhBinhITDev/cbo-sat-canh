@@ -22,6 +22,7 @@ export type Post = {
   title: string;
   excerpt: string | null;
   content_md: string | null;
+  content_html: string | null;
   cover_url: string | null;
   category: PostCategory;
   status: PostStatus;
@@ -32,7 +33,7 @@ export type Post = {
   published_at: string | null;
   created_at: string;
   updated_at: string;
-  author?: Pick<Profile, "full_name"> | null;
+  author?: Pick<Profile, "full_name" | "avatar_url"> | null;
 };
 
 export type Service = {
