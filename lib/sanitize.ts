@@ -30,15 +30,23 @@ export function cleanPostHtml(dirty: string): string {
       "figcaption",
       "code",
       "pre",
+      "span",
     ],
     allowedAttributes: {
       a: ["href", "target", "rel", "title"],
-      img: ["src", "alt", "title", "width", "height", "loading"],
+      img: ["src", "alt", "title", "width", "height", "loading", "style"],
+      span: ["style"],
       "*": ["style"],
     },
     allowedStyles: {
       "*": {
         "text-align": [/^left$/, /^right$/, /^center$/, /^justify$/],
+        // Cỡ chữ theo pt, giới hạn 9–28pt (khớp danh sách trong RichTextEditor).
+        "font-size": [/^(9|10|11|12|14|16|18|20|24|28)pt$/],
+      },
+      img: {
+        // Chiều rộng ảnh theo % khung nội dung: chỉ 25/50/75/100.
+        width: [/^(25|50|75|100)%$/],
       },
     },
     allowedSchemes: ["http", "https", "mailto", "tel"],

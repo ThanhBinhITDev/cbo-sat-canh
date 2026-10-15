@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import Image from "next/image";
 import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -117,6 +116,12 @@ export default async function PostPage({ params }: PageProps<"/tin-tuc/[slug]">)
               {post.title}
             </h1>
 
+            {post.excerpt && (
+              <p className="mt-4 max-w-3xl text-lg leading-relaxed text-ink/75">
+                {post.excerpt}
+              </p>
+            )}
+
             <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-ink/65">
               {published && (
                 <span className="inline-flex items-center gap-1.5">
@@ -153,19 +158,6 @@ export default async function PostPage({ params }: PageProps<"/tin-tuc/[slug]">)
         <article className="section bg-surface">
           <div className="container-site">
             <div className="mx-auto max-w-3xl">
-              {post.cover_url && (
-                <div className="relative mb-8 aspect-[16/10] overflow-hidden rounded-3xl bg-muted">
-                  <Image
-                    src={post.cover_url}
-                    alt={post.title}
-                    fill
-                    priority
-                    sizes="(max-width: 768px) 100vw, 768px"
-                    className="object-cover"
-                  />
-                </div>
-              )}
-
               {post.content_html ? (
                 <div
                   className="prose-post"
@@ -177,19 +169,6 @@ export default async function PostPage({ params }: PageProps<"/tin-tuc/[slug]">)
                     {post.content_md ?? ""}
                   </ReactMarkdown>
                 </div>
-              )}
-
-              {post.author?.full_name && (
-                <aside className="mt-10 rounded-2xl border border-line bg-muted p-5">
-                  <p className="mb-3 text-xs font-bold uppercase tracking-wide text-ink/55">
-                    Về tác giả
-                  </p>
-                  <PostAuthor
-                    name={post.author.full_name}
-                    avatarUrl={post.author.avatar_url}
-                    size="lg"
-                  />
-                </aside>
               )}
 
               <Link
