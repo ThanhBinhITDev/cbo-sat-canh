@@ -162,7 +162,7 @@ export default async function PostPage({ params }: PageProps<"/tin-tuc/[slug]">)
 
         <article className="pb-16 pt-7 sm:pt-8">
           <div className="container-site">
-            <div className="mx-auto w-full max-w-[52rem]">
+            <div className="w-full">
               <h1 className="text-[clamp(1.6rem,4vw,2.6rem)] font-extrabold leading-tight">
                 {post.title}
               </h1>
