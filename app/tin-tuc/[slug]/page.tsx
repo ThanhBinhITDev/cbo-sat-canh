@@ -45,7 +45,9 @@ export async function generateMetadata({
       title,
       description,
       url: absoluteUrl(`/tin-tuc/${post.slug}`),
-      images: post.cover_url ? [{ url: post.cover_url }] : undefined,
+      images: post.cover_url
+        ? [{ url: post.cover_url.startsWith("http") ? post.cover_url : absoluteUrl(post.cover_url) }]
+        : undefined,
       publishedTime: post.published_at ?? undefined,
       authors: post.author?.full_name ? [post.author.full_name] : undefined,
     },
@@ -53,7 +55,9 @@ export async function generateMetadata({
       card: "summary_large_image",
       title,
       description,
-      images: post.cover_url ? [post.cover_url] : undefined,
+      images: post.cover_url
+        ? [post.cover_url.startsWith("http") ? post.cover_url : absoluteUrl(post.cover_url)]
+        : undefined,
     },
   };
 }
