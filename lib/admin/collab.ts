@@ -3,6 +3,11 @@ import { isSupabaseConfigured } from "@/lib/env";
 import { NOT_CONFIGURED, type AdminResult } from "@/lib/admin/data";
 import type {
   CollabMember,
+  ContributionEntry,
+  ContributionSource,
+  LeaderboardRow,
+  Medal,
+  ProfileMedalWithMedal,
   Task,
   TaskAssignee,
   TaskAssigneeRole,
@@ -292,4 +297,140 @@ export async function getTaskStats(profileId: string): Promise<TaskStats | null>
 
   const total = statuses.reduce((s, k) => s + byStatus[k], 0);
   return { total, byStatus, overdue: overdue ?? 0, mineOpen: mineOpen ?? 0 };
+}
+
+/* ------------------------------------------------------------------ *
+ * Giai đoạn 2 — Điểm đóng góp, huy chương, xếp hạng
+ * ------------------------------------------------------------------ */
+
+export type LeaderboardResult =
+  | { ok: true; rows: LeaderboardRow[] }
+  | { ok: false; message: string; detail?: string };
+
+/** Bảng xếp hạng (từ RPC definer — staff mới đọc được). */
+export async function getLeaderboard(): Promise<LeaderboardResult> {
+  if (!isSupabaseConfigured) return failWith(NOT_CONFIGURED.message, NOT_CONFIGURED.detail);
+  const supabase = await createClient();
+  if (!supabase) return failWith(NOT_CONFIGURED.message, NOT_CONFIGURED.detail);
+
+  const { data, error } = await supabase.rpc("collab_leaderboard");
+  if (error) return failWith("Không đọc được bảng xếp hạng.", error.message);
+  return { ok: true, rows: (data ?? []) as LeaderboardRow[] };
+}
+
+/** Danh mục huy chương (staff). */
+export async function getMedals(
+  activeOnly = false,
+): Promise<AdminResult<Medal>> {
+  if (!isSupabaseConfigured) return NOT_CONFIGURED;
+  const supabase = await createClient();
+  if (!supabase) return NOT_CONFIGURED;
+
+  let query = supabase.from("medals").select("*").order("sort_order");
+  if (activeOnly) query = query.eq("is_active", true);
+
+  const { data, error } = await query;
+  if (error) return failWith("Không đọc được danh mục huy chương.", error.message);
+  return { ok: true, rows: (data ?? []) as Medal[] };
+}
+
+export type MedalAward = ProfileMedalWithMedal;
+
+/** Huy chương đã trao, kèm thông tin huy chương. */
+export async function getAwardedMedals(
+  profileId?: string,
+): Promise<AdminResult<MedalAward>> {
+  if (!isSupabaseConfigured) return NOT_CONFIGURED;
+  const supabase = await createClient();
+  if (!supabase) return NOT_CONFIGURED;
+
+  let query = supabase
+    .from("profile_medals")
+    .select("*, medals(*)")
+    .order("awarded_at", { ascending: false });
+  if (profileId) query = query.eq("profile_id", profileId);
+
+  const { data, error } = await query;
+  if (error) return failWith("Không đọc được huy chương.", error.message);
+  return { ok: true, rows: (data ?? []) as MedalAward[] };
+}
+
+export type ContributionFilters = {
+  profileId?: string;
+  taskId?: string;
+  source?: ContributionSource | "";
+  page?: number;
+  pageSize?: number;
+};
+
+export type ContributionListResult =
+  | { ok: true; rows: ContributionEntry[]; total: number; page: number; pageSize: number }
+  | { ok: false; message: string; detail?: string };
+
+/** Sổ điểm đóng góp (kèm tên người nhận/giao qua map ở UI). */
+export async function getContributions(
+  filters: ContributionFilters = {},
+): Promise<ContributionListResult> {
+  if (!isSupabaseConfigured) return failWith(NOT_CONFIGURED.message, NOT_CONFIGURED.detail);
+  const supabase = await createClient();
+  if (!supabase) return failWith(NOT_CONFIGURED.message, NOT_CONFIGURED.detail);
+
+  const pageSize = Math.min(Math.max(filters.pageSize ?? 20, 1), 100);
+  const page = Math.max(filters.page ?? 1, 1);
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  let query = supabase.from("contribution_ledger").select("*", { count: "exact" });
+  if (filters.profileId) query = query.eq("profile_id", filters.profileId);
+  if (filters.taskId) query = query.eq("task_id", filters.taskId);
+  if (filters.source) query = query.eq("source", filters.source);
+
+  const { data, error, count } = await query
+    .order("created_at", { ascending: false })
+    .range(from, to);
+
+  if (error) return failWith("Không đọc được sổ điểm đóng góp.", error.message);
+  return {
+    ok: true,
+    rows: (data ?? []) as ContributionEntry[],
+    total: count ?? (data ?? []).length,
+    page,
+    pageSize,
+  };
+}
+
+/** Ánh xạ task_id → tiêu đề, để hiển thị nguồn điểm trong sổ. */
+export async function getTaskTitleMap(ids: string[]): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  const unique = Array.from(new Set(ids.filter(Boolean)));
+  if (unique.length === 0) return map;
+  if (!isSupabaseConfigured) return map;
+  const supabase = await createClient();
+  if (!supabase) return map;
+
+  const { data } = await supabase.from("tasks").select("id, title").in("id", unique);
+  for (const t of (data ?? []) as { id: string; title: string }[]) {
+    map.set(t.id, t.title);
+  }
+  return map;
+}
+
+/** Tổng điểm + số huy chương của một người (RPC collab_totals). */
+export async function getMyTotals(
+  profileId: string,
+): Promise<{ ok: true; totalPoints: number; totalMedals: number } | null> {
+  if (!isSupabaseConfigured) return null;
+  const supabase = await createClient();
+  if (!supabase) return null;
+
+  const { data, error } = await supabase.rpc("collab_totals", {
+    p_profile: profileId,
+  });
+  if (error) return null;
+  const row = (data as { total_points?: number; total_medals?: number }[] | null)?.[0];
+  return {
+    ok: true,
+    totalPoints: Number(row?.total_points ?? 0),
+    totalMedals: Number(row?.total_medals ?? 0),
+  };
 }

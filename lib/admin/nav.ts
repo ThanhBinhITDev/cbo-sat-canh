@@ -59,6 +59,15 @@ export const ADMIN_NAV: NavGroup[] = [
     ],
   },
   {
+    key: "achievements",
+    label: "Thành tích",
+    items: [
+      { href: "/admin/xep-hang", label: "Bảng xếp hạng", roles: ["admin", "editor", "collaborator"] },
+      { href: "/admin/dong-gop", label: "Ghi nhận đóng góp", roles: ["admin", "editor", "collaborator"], manageOnly: true },
+      { href: "/admin/huy-chuong", label: "Huy chương", roles: ["admin"], manageOnly: true },
+    ],
+  },
+  {
     key: "contact",
     label: "Liên hệ",
     items: [
@@ -79,6 +88,14 @@ export const ADMIN_NAV: NavGroup[] = [
 /** Các trang ngoài menu, dùng cho breadcrumb. */
 const EXTRA_LABELS: Record<string, string> = {
   "/admin/ho-so": "Hồ sơ của tôi",
+  "/admin/nhiem-vu/moi": "Thêm nhiệm vụ",
+  "/admin/nhiem-vu/[id]": "Chi tiết nhiệm vụ",
+  "/admin/nhiem-vu/[id]/sua": "Sửa nhiệm vụ",
+  "/admin/xep-hang": "Bảng xếp hạng",
+  "/admin/dong-gop": "Ghi nhận đóng góp",
+  "/admin/huy-chuong": "Huy chương",
+  "/admin/huy-chuong/moi": "Thêm huy chương",
+  "/admin/huy-chuong/[id]/sua": "Sửa huy chương",
 };
 
 export function visibleNav(

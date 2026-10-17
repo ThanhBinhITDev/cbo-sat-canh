@@ -24,6 +24,8 @@ import {
   HardDrive,
   ListChecks,
   ClipboardList,
+  Trophy,
+  Award,
 } from "lucide-react";
 import Image from "next/image";
 import { signOut } from "@/app/admin/actions";
@@ -51,6 +53,9 @@ const ICONS: Record<string, ReactNode> = {
   "/admin/luu-tru": <HardDrive size={18} />,
   "/admin/viec-cua-toi": <ClipboardList size={18} />,
   "/admin/nhiem-vu": <ListChecks size={18} />,
+  "/admin/xep-hang": <Trophy size={18} />,
+  "/admin/dong-gop": <Award size={18} />,
+  "/admin/huy-chuong": <Award size={18} />,
 };
 
 const ROLE_LABELS: Record<Role, string> = {

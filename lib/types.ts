@@ -335,3 +335,78 @@ export const TASK_STATUS_ORDER: TaskStatus[] = [
 ];
 
 export const TASK_PRIORITY_ORDER: TaskPriority[] = ["urgent", "high", "normal", "low"];
+
+/* ------------------------------------------------------------------ *
+ * Giai đoạn 2 — Điểm đóng góp, huy chương, xếp hạng
+ * ------------------------------------------------------------------ */
+
+export type MedalTier = "bronze" | "silver" | "gold" | "platinum";
+export type ContributionSource = "task" | "manual" | "event" | "other";
+
+export type Medal = {
+  id: string;
+  key: string;
+  name: string;
+  description: string | null;
+  tier: MedalTier;
+  threshold_points: number;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+};
+
+export type ProfileMedal = {
+  id: string;
+  profile_id: string;
+  medal_id: string;
+  awarded_by: string | null;
+  note: string | null;
+  awarded_at: string;
+};
+
+/** Huy chương đã trao, kèm thông tin huy chương (join). */
+export type ProfileMedalWithMedal = ProfileMedal & { medals: Medal | null };
+
+export type ContributionEntry = {
+  id: string;
+  profile_id: string;
+  points: number;
+  source: ContributionSource;
+  task_id: string | null;
+  note: string | null;
+  awarded_by: string | null;
+  created_at: string;
+};
+
+/** Dòng bảng xếp hạng (từ RPC collab_leaderboard — staff). */
+export type LeaderboardRow = {
+  id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  role: Role;
+  total_points: number;
+  total_medals: number;
+};
+
+export const TIER_LABELS: Record<MedalTier, string> = {
+  bronze: "Đồng",
+  silver: "Bạc",
+  gold: "Vàng",
+  platinum: "Bạch kim",
+};
+
+export const TIER_BADGE: Record<MedalTier, string> = {
+  bronze: "badge-yellow",
+  silver: "badge-gray",
+  gold: "badge-blue",
+  platinum: "badge-red",
+};
+
+export const SOURCE_LABELS: Record<ContributionSource, string> = {
+  task: "Từ nhiệm vụ",
+  manual: "Ghi tay",
+  event: "Sự kiện",
+  other: "Khác",
+};
+
+export const MEDAL_TIER_ORDER: MedalTier[] = ["platinum", "gold", "silver", "bronze"];
