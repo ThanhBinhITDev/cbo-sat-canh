@@ -5,14 +5,12 @@ import { ErrorState, Notice } from "@/components/admin/States";
 import { StatCard } from "@/components/admin/StatCard";
 import { Pagination } from "@/components/admin/Pagination";
 import { TaskStatusBadge, PriorityBadge } from "@/components/admin/TaskStatusBadge";
-import TaskForm from "@/components/admin/collab/TaskForm";
 import ConfirmSubmit from "@/components/admin/ConfirmSubmit";
 import { ToastForm } from "@/components/admin/ProfileForms";
 import { deleteTask } from "@/lib/admin/collab-actions";
 import {
   getMembers,
   getTaskCategories,
-  getTaskDetail,
   getTasks,
   getTaskStats,
 } from "@/lib/admin/collab";
@@ -40,8 +38,6 @@ export default async function TasksAdminPage({
   const assigneeId = typeof sp.nguoi === "string" ? sp.nguoi : "";
   const search = typeof sp.q === "string" ? sp.q : "";
   const page = Number(typeof sp.page === "string" ? sp.page : "1") || 1;
-  const editId = typeof sp.edit === "string" ? sp.edit : "";
-  const isNew = sp.moi === "1";
 
   const [list, categories, membersRes, stats] = await Promise.all([
     getTasks({
@@ -60,12 +56,6 @@ export default async function TasksAdminPage({
   const memberMap = new Map(members.map((m) => [m.id, m]));
   const cats = categories.ok ? categories.rows : [];
 
-  const editDetail = editId ? await getTaskDetail(editId) : null;
-  const editing = editDetail?.ok ? editDetail.data.task : null;
-  const editingAssigneeIds =
-    editDetail?.ok ? editDetail.data.assignees.map((a) => a.profile_id) : [];
-
-  const openForm = isNew || (editId && editing);
   const today = new Date().toISOString().slice(0, 10);
 
   const filterParams = {
@@ -81,7 +71,7 @@ export default async function TasksAdminPage({
         title="Nhiệm vụ"
         description="Giao việc, theo dõi tiến độ và duyệt kết quả của cộng tác viên."
         action={
-          <Link href="/admin/nhiem-vu?moi=1" className="btn btn-primary px-4 py-2.5 text-sm">
+          <Link href="/admin/nhiem-vu/moi" className="btn btn-primary px-4 py-2.5 text-sm">
             <Plus size={18} /> Giao nhiệm vụ
           </Link>
         }
@@ -119,9 +109,8 @@ export default async function TasksAdminPage({
         </div>
       )}
 
-      <div className="grid gap-5 xl:grid-cols-[1.5fr,1fr]">
-        <div className="space-y-5">
-          <form method="get" className="card flex flex-wrap items-end gap-3 p-4">
+      <div className="space-y-5">
+        <form method="get" className="card flex flex-wrap items-end gap-3 p-4">
             <div className="min-w-[160px] flex-1">
               <label className="field-label">Tìm theo tiêu đề</label>
               <input name="q" defaultValue={search} placeholder="Nhập từ khoá…" className="input" />
@@ -245,7 +234,7 @@ export default async function TasksAdminPage({
                             <td>
                               <div className="flex justify-end gap-1.5">
                                 <Link
-                                  href={`/admin/nhiem-vu?edit=${t.id}`}
+                                  href={`/admin/nhiem-vu/${t.id}/sua`}
                                   className="grid h-8 w-8 place-items-center rounded-xl border border-line text-ink/55 hover:border-primary hover:text-primary"
                                   aria-label={`Sửa ${t.title}`}
                                 >
@@ -278,22 +267,6 @@ export default async function TasksAdminPage({
             </Panel>
           )}
         </div>
-
-        {openForm && (
-          <Panel className="h-fit xl:sticky xl:top-24">
-            <PanelHead
-              title={editing ? "Sửa nhiệm vụ" : "Giao nhiệm vụ mới"}
-              subtitle="Chọn người thực hiện và mốc thời gian"
-            />
-            <TaskForm
-              task={editing}
-              categories={cats}
-              members={members}
-              selectedAssigneeIds={editingAssigneeIds}
-            />
-          </Panel>
-        )}
-      </div>
-    </>
+      </>
   );
 }

@@ -155,6 +155,46 @@ export async function saveTask(
       if (error) return { ok: false, message: `Không thêm người thực hiện: ${error.message}` };
     }
 
+    // Đồng bộ ảnh đính kèm (giữ loại 'reference'; loại 'result' do RPC tạo).
+    const urls = formData
+      .getAll("attachment_url")
+      .map((v) => text(v))
+      .filter(Boolean);
+    const names = formData.getAll("attachment_name").map((v) => text(v));
+    const desiredAtt = urls.map((url, i) => ({ url, name: names[i] || "" }));
+
+    const { data: curAtt } = await supabase
+      .from("task_attachments")
+      .select("id, url, kind")
+      .eq("task_id", taskId);
+    const curAttRows = (curAtt ?? []) as { id: string; url: string; kind: string }[];
+    const curRefUrls = new Set(curAttRows.filter((r) => r.kind === "reference").map((r) => r.url));
+    const desiredUrls = new Set(desiredAtt.map((a) => a.url));
+
+    const attRemove = curAttRows
+      .filter((r) => r.kind === "reference" && !desiredUrls.has(r.url))
+      .map((r) => r.id);
+    const attAdd = desiredAtt.filter((a) => !curRefUrls.has(a.url));
+
+    if (attRemove.length) {
+      const { error } = await supabase.from("task_attachments").delete().in("id", attRemove);
+      if (error) return { ok: false, message: `Không cập nhật được ảnh: ${error.message}` };
+    }
+    if (attAdd.length) {
+      const { error } = await supabase
+        .from("task_attachments")
+        .insert(
+          attAdd.map((a) => ({
+            task_id: taskId,
+            name: a.name || null,
+            url: a.url,
+            kind: "reference",
+            uploaded_by: user.id,
+          })),
+        );
+      if (error) return { ok: false, message: `Không thêm được ảnh: ${error.message}` };
+    }
+
     revalidateCollab(taskId);
     return { ok: true, message: id ? "Đã cập nhật nhiệm vụ." : "Đã giao nhiệm vụ." };
   });

@@ -22,6 +22,18 @@ function safeName(name: string) {
  * Dùng chung cho hộp thoại chèn ảnh, kéo-thả và ảnh bìa.
  */
 export async function uploadArticleImage(file: File): Promise<string> {
+  return uploadToFolder(file, "uploads", "article");
+}
+
+/**
+ * Tải ảnh đính kèm nhiệm vụ lên thư mục `uploads/tasks/<uid>/` của bucket
+ * `site-assets` (chỉ người có quyền quản lý cộng tác được tải lên).
+ */
+export async function uploadTaskImage(file: File): Promise<string> {
+  return uploadToFolder(file, "uploads/tasks", "task");
+}
+
+async function uploadToFolder(file: File, folder: string, prefix: string): Promise<string> {
   if (!file.type.startsWith("image/")) {
     throw new Error("Tệp đã chọn không phải là ảnh.");
   }
@@ -35,7 +47,7 @@ export async function uploadArticleImage(file: File): Promise<string> {
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Phiên đăng nhập không hợp lệ. Hãy đăng nhập lại.");
 
-  const path = `uploads/${user.id}/${Date.now()}-${safeName(file.name)}`;
+  const path = `${folder}/${user.id}/${Date.now()}-${prefix}-${safeName(file.name)}`;
   const { error } = await supabase.storage
     .from("site-assets")
     .upload(path, file, { cacheControl: "3600", upsert: false });

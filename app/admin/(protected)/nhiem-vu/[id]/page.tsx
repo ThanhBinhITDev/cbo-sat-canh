@@ -82,7 +82,7 @@ export default async function TaskDetailPage({
         </div>
         {isManager && (
           <Link
-            href={`/admin/nhiem-vu?edit=${task.id}`}
+            href={`/admin/nhiem-vu/${task.id}/sua`}
             className="btn btn-ghost px-4 py-2.5 text-sm"
           >
             <Pencil size={16} /> Sửa
@@ -205,28 +205,35 @@ export default async function TaskDetailPage({
             </p>
           ) : (
             <ol className="divide-y divide-line">
-              {updates.map((u) => (
-                <li key={u.id} className="px-5 py-4">
-                  <div className="flex flex-wrap items-center gap-2 text-xs text-ink/60">
-                    <span className="badge badge-gray">{TASK_UPDATE_LABELS[u.kind]}</span>
-                    <span className="font-semibold text-ink/80">
-                      {u.author_id ? memberMap.get(u.author_id)?.full_name ?? "Thành viên" : "Hệ thống"}
-                    </span>
-                    <span>·</span>
-                    <span>
-                      {formatDate(u.created_at)} {formatTime(u.created_at)}
-                    </span>
-                    {u.status_from && u.status_to && u.status_from !== u.status_to && (
-                      <span className="text-ink/50">
-                        ({u.status_from} → {u.status_to})
-                      </span>
-                    )}
-                  </div>
-                  {u.body && (
-                    <p className="mt-1.5 whitespace-pre-line text-sm text-ink/90">{u.body}</p>
-                  )}
-                </li>
-              ))}
+              {updates.map((u) => {
+                const author = u.author_id ? memberMap.get(u.author_id) : undefined;
+                const authorName = u.author_id
+                  ? author?.full_name || author?.email || "Thành viên"
+                  : "Hệ thống";
+                return (
+                  <li key={u.id} className="flex gap-3 px-5 py-4">
+                    <AuthorAvatar name={authorName} url={author?.avatar_url ?? null} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-ink/60">
+                        <span className="badge badge-gray">{TASK_UPDATE_LABELS[u.kind]}</span>
+                        <span className="font-semibold text-ink/80">{authorName}</span>
+                        <span>·</span>
+                        <span>
+                          {formatDate(u.created_at)} {formatTime(u.created_at)}
+                        </span>
+                        {u.status_from && u.status_to && u.status_from !== u.status_to && (
+                          <span className="text-ink/50">
+                            ({u.status_from} → {u.status_to})
+                          </span>
+                        )}
+                      </div>
+                      {u.body && (
+                        <p className="mt-1.5 whitespace-pre-line text-sm text-ink/90">{u.body}</p>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
             </ol>
           )}
         </Panel>
@@ -254,5 +261,22 @@ function Info({
         <p className="text-sm font-semibold">{children}</p>
       </div>
     </div>
+  );
+}
+
+/** Ảnh đại diện người bình luận; không có thì hiện chữ đầu tên. */
+function AuthorAvatar({ name, url }: { name: string; url?: string | null }) {
+  return (
+    <span
+      className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-primary/10 text-sm font-black text-primary"
+      aria-hidden
+    >
+      {url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={url} alt="" className="h-full w-full object-cover" />
+      ) : (
+        (name.trim().slice(0, 1).toUpperCase() || "?")
+      )}
+    </span>
   );
 }

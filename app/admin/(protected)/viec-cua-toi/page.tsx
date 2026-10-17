@@ -89,8 +89,11 @@ export default async function MyTasksPage() {
                         )}
                       </p>
                     </div>
-                    <div className="hidden shrink-0 items-center gap-2 sm:flex">
-                      <PriorityBadge priority={t.priority} />
+                    <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 sm:gap-3">
+                      <span className="flex items-center gap-1.5">
+                        <span className="text-[11px] font-semibold text-ink/50">Ưu tiên</span>
+                        <PriorityBadge priority={t.priority} />
+                      </span>
                       <TaskStatusBadge status={t.status} />
                     </div>
                   </Link>

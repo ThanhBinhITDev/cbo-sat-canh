@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Field } from "@/components/admin/ui";
 import { ToastForm } from "@/components/admin/ProfileForms";
+import TaskImageAttachments from "@/components/admin/collab/TaskImageAttachments";
 import { saveTask } from "@/lib/admin/collab-actions";
 import {
   TASK_PRIORITY_LABELS,
@@ -17,11 +18,13 @@ export default function TaskForm({
   categories,
   members,
   selectedAssigneeIds = [],
+  initialAttachments = [],
 }: {
   task?: Task | null;
   categories: TaskCategory[];
   members: CollabMember[];
   selectedAssigneeIds?: string[];
+  initialAttachments?: { url: string; name: string }[];
 }) {
   const selected = new Set(selectedAssigneeIds);
 
@@ -124,6 +127,8 @@ export default function TaskForm({
           className="input"
         />
       </Field>
+
+      <TaskImageAttachments initial={initialAttachments} />
 
       <div>
         <p className="field-label">Người thực hiện</p>
