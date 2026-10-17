@@ -82,6 +82,13 @@ export const ADMIN_NAV: NavGroup[] = [
     ],
   },
   {
+    key: "docs",
+    label: "Tài liệu nội bộ",
+    items: [
+      { href: "/admin/tai-lieu", label: "Tài liệu", roles: ["admin", "editor", "collaborator"], manageOnly: true },
+    ],
+  },
+  {
     key: "contact",
     label: "Liên hệ",
     items: [
@@ -118,6 +125,9 @@ const EXTRA_LABELS: Record<string, string> = {
   "/admin/hoat-dong/moi": "Thêm hoạt động",
   "/admin/hoat-dong/[id]": "Chi tiết hoạt động",
   "/admin/hoat-dong/[id]/sua": "Sửa hoạt động",
+  "/admin/tai-lieu": "Tài liệu nội bộ",
+  "/admin/tai-lieu/moi": "Tải lên tài liệu",
+  "/admin/tai-lieu/[id]": "Chi tiết tài liệu",
 };
 
 export function visibleNav(

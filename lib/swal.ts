@@ -62,21 +62,20 @@ export async function confirmDialog(options: {
   return result.isConfirmed;
 }
 
-/**
- * Hiển thị thông báo Toast góc trên với SweetAlert2 (tuỳ chọn)
- */
-export const SwalToast = Swal.mixin({
+export const SwalToast = AppSwal.mixin({
   toast: true,
   position: "top-end",
   showConfirmButton: false,
   timer: 3500,
   timerProgressBar: true,
-  customClass: {
-    popup: "cbosc-swal-toast",
-    title: "cbosc-swal-toast-title",
-  },
-  didOpen: (toast) => {
-    toast.onmouseenter = Swal.stopTimer;
-    toast.onmouseleave = Swal.resumeTimer;
-  },
 });
+
+/**
+ * Hiển thị thông báo Toast góc trên với SweetAlert2 (tuỳ chọn)
+ */
+export const toast = {
+  success: (msg: string) => SwalToast.fire({ icon: "success", title: msg }),
+  error: (msg: string) => SwalToast.fire({ icon: "error", title: msg }),
+  info: (msg: string) => SwalToast.fire({ icon: "info", title: msg }),
+  warn: (msg: string) => SwalToast.fire({ icon: "warning", title: msg }),
+};
