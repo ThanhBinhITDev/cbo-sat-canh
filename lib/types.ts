@@ -410,3 +410,138 @@ export const SOURCE_LABELS: Record<ContributionSource, string> = {
 };
 
 export const MEDAL_TIER_ORDER: MedalTier[] = ["platinum", "gold", "silver", "bronze"];
+
+/* ------------------------------------------------------------------ *
+ * Giai đoạn 3 — Dự án & Hoạt động
+ * ------------------------------------------------------------------ */
+
+export type ProjectStatus = "planning" | "active" | "on_hold" | "completed" | "cancelled";
+export type ProjectMemberRole = "lead" | "member" | "support";
+export type ProjectMemberStatus = "active" | "inactive";
+
+export type EventStatus = "draft" | "published" | "cancelled" | "completed";
+export type EventType = "meeting" | "workshop" | "outreach" | "training" | "other";
+export type EventAttendeeStatus = "invited" | "confirmed" | "declined" | "attended" | "no_show";
+
+export type Project = {
+  id: string;
+  name: string;
+  code: string | null;
+  status: ProjectStatus;
+  start_date: string | null;
+  end_date: string | null;
+  leader_id: string | null;
+  cover_url: string | null;
+  description: string | null;
+  internal_note: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ProjectMember = {
+  id: string;
+  project_id: string;
+  profile_id: string;
+  role: ProjectMemberRole;
+  status: ProjectMemberStatus;
+  joined_at: string;
+};
+
+export type ProjectWithLeader = Project & {
+  leader?: Pick<Profile, "id" | "full_name" | "avatar_url"> | null;
+};
+
+export type ProjectMemberWithProfile = ProjectMember & {
+  profile: Pick<Profile, "id" | "full_name" | "email" | "avatar_url" | "role">;
+};
+
+export type Event = {
+  id: string;
+  name: string;
+  code: string | null;
+  project_id: string | null;
+  status: EventStatus;
+  type: EventType;
+  start_at: string | null;
+  end_at: string | null;
+  location: string | null;
+  capacity: number | null;
+  cover_url: string | null;
+  description: string | null;
+  internal_note: string | null;
+  organizer_id: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type EventWithProject = Event & {
+  project?: Pick<Project, "id" | "name"> | null;
+};
+
+export type EventAttendee = {
+  id: string;
+  event_id: string;
+  profile_id: string;
+  status: EventAttendeeStatus;
+  checked_in_at: string | null;
+  note: string | null;
+};
+
+export type EventAttendeeWithProfile = EventAttendee & {
+  profile: Pick<Profile, "id" | "full_name" | "email" | "avatar_url">;
+};
+
+export type EventRegistration = {
+  id: string;
+  event_id: string;
+  full_name: string;
+  phone: string | null;
+  email: string | null;
+  status: "registered" | "confirmed" | "attended" | "declined" | "cancelled";
+  note: string | null;
+  registered_at: string;
+};
+
+export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
+  planning: "Lên kế hoạch",
+  active: "Đang thực hiện",
+  on_hold: "Tạm dừng",
+  completed: "Hoàn thành",
+  cancelled: "Đã hủy",
+};
+export const PROJECT_MEMBER_ROLE_LABELS: Record<ProjectMemberRole, string> = {
+  lead: "Trưởng dự án",
+  member: "Thành viên",
+  support: "Hỗ trợ",
+};
+export const PROJECT_MEMBER_STATUS_LABELS: Record<ProjectMemberStatus, string> = {
+  active: "Hoạt động",
+  inactive: "Ngừng",
+};
+export const EVENT_STATUS_LABELS: Record<EventStatus, string> = {
+  draft: "Nháp",
+  published: "Công khai",
+  cancelled: "Đã hủy",
+  completed: "Đã kết thúc",
+};
+export const EVENT_TYPE_LABELS: Record<EventType, string> = {
+  meeting: "Họp",
+  workshop: "Tập huấn",
+  outreach: "Tiếp cận cộng đồng",
+  training: "Đào tạo",
+  other: "Khác",
+};
+export const EVENT_ATT_STATUS_LABELS: Record<EventAttendeeStatus, string> = {
+  invited: "Đã mời",
+  confirmed: "Xác nhận",
+  declined: "Từ chối",
+  attended: "Đã tham dự",
+  no_show: "Không tham dự",
+};
+export const EVENT_REG_STATUS_LABELS: Record<"registered" | "confirmed" | "attended" | "declined" | "cancelled", string> = {
+  registered: "Đã đăng ký",
+  confirmed: "Đã xác nhận",
+  attended: "Đã tham dự",
+  declined: "Từ chối",
+  cancelled: "Đã hủy",
+};

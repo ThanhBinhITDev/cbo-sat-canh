@@ -15,6 +15,8 @@ import type {
   TaskCategory,
   TaskStatus,
   TaskUpdate,
+  ProjectWithLeader,
+  EventWithProject,
 } from "@/lib/types";
 
 export type TaskAssigneeBrief = {
@@ -433,4 +435,151 @@ export async function getMyTotals(
     totalPoints: Number(row?.total_points ?? 0),
     totalMedals: Number(row?.total_medals ?? 0),
   };
+}
+
+/* ------------------------------------------------------------------ *
+ * Giai đoạn 3 — Dự án & Hoạt động
+ * ------------------------------------------------------------------ */
+
+type ProjectListResult =
+  | { ok: true; rows: ProjectWithLeader[]; total: number; page: number; pageSize: number }
+  | { ok: false; message: string; detail?: string };
+
+type EventListResult =
+  | { ok: true; rows: EventWithProject[]; total: number; page: number; pageSize: number }
+  | { ok: false; message: string; detail?: string };
+
+function fmtFail(msg: string, detail?: string) {
+  return { ok: false as const, message: msg, detail };
+}
+
+export async function getProjects({
+  page = 1,
+  pageSize = 20,
+  status,
+  search = "",
+}: {
+  page?: number;
+  pageSize?: number;
+  status?: string;
+  search?: string;
+} = {}): Promise<ProjectListResult> {
+  if (!isSupabaseConfigured) return fmtFail("Chưa cấu hình Supabase.");
+  const supabase = await createClient();
+  if (!supabase) return fmtFail("Không tạo được kết nối Supabase.");
+
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+  let q = supabase
+    .from("projects")
+    .select("*, leader:profiles(id,full_name,avatar_url)", { count: "exact" })
+    .order("updated_at", { ascending: false })
+    .range(from, to);
+  if (status) q = q.eq("status", status);
+  if (search.trim()) q = q.or(`name.ilike.%${search.trim()}%,code.ilike.%${search.trim()}%`);
+  const { data, error, count } = await q;
+  if (error) return fmtFail("Không đọc được dự án.", error.message);
+  return { ok: true, rows: data ?? [], total: count ?? (data ?? []).length, page, pageSize };
+}
+
+export async function getProject(id: string) {
+  if (!isSupabaseConfigured) return { ok: false as const, message: "Chưa cấu hình Supabase." };
+  const supabase = await createClient();
+  if (!supabase) return { ok: false as const, message: "Không tạo được kết nối." };
+  const { data, error } = await supabase
+    .from("projects")
+    .select("*, leader:profiles(id,full_name,avatar_url)")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) return { ok: false as const, message: error.message };
+  if (!data) return { ok: false as const, message: "Không tìm thấy dự án." };
+  return { ok: true as const, row: data };
+}
+
+export async function getProjectMembers(projectId: string) {
+  if (!isSupabaseConfigured) return { ok: false as const, message: "Chưa cấu hình Supabase." };
+  const supabase = await createClient();
+  if (!supabase) return { ok: false as const, message: "Không tạo được kết nối." };
+  const { data, error } = await supabase
+    .from("project_members")
+    .select("*, profile:profiles(id,full_name,email,avatar_url,role)")
+    .eq("project_id", projectId)
+    .order("role", { ascending: true });
+  if (error) return { ok: false as const, message: error.message };
+  return { ok: true as const, rows: data ?? [] };
+}
+
+export async function getEvents({
+  page = 1,
+  pageSize = 20,
+  status,
+  type,
+  projectId,
+  search = "",
+}: {
+  page?: number;
+  pageSize?: number;
+  status?: string;
+  type?: string;
+  projectId?: string;
+  search?: string;
+} = {}): Promise<EventListResult> {
+  if (!isSupabaseConfigured) return fmtFail("Chưa cấu hình Supabase.");
+  const supabase = await createClient();
+  if (!supabase) return fmtFail("Không tạo được kết nối Supabase.");
+
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+  let q = supabase
+    .from("events")
+    .select("*, project:projects(id,name)", { count: "exact" })
+    .order("start_at", { ascending: false })
+    .range(from, to);
+  if (status) q = q.eq("status", status);
+  if (type) q = q.eq("type", type);
+  if (projectId) q = q.eq("project_id", projectId);
+  if (search.trim()) q = q.or(`name.ilike.%${search.trim()}%,code.ilike.%${search.trim()}%`);
+  const { data, error, count } = await q;
+  if (error) return fmtFail("Không đọc được hoạt động.", error.message);
+  return { ok: true, rows: data ?? [], total: count ?? (data ?? []).length, page, pageSize };
+}
+
+export async function getEvent(id: string) {
+  if (!isSupabaseConfigured) return { ok: false as const, message: "Chưa cấu hình Supabase." };
+  const supabase = await createClient();
+  if (!supabase) return { ok: false as const, message: "Không tạo được kết nối." };
+  const { data, error } = await supabase
+    .from("events")
+    .select("*, project:projects(id,name)")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) return { ok: false as const, message: error.message };
+  if (!data) return { ok: false as const, message: "Không tìm thấy hoạt động." };
+  return { ok: true as const, row: data };
+}
+
+export async function getEventAttendees(eventId: string) {
+  if (!isSupabaseConfigured) return { ok: false as const, message: "Chưa cấu hình Supabase." };
+  const supabase = await createClient();
+  if (!supabase) return { ok: false as const, message: "Không tạo được kết nối." };
+  const { data, error } = await supabase
+    .from("event_attendees")
+    .select("*, profile:profiles(id,full_name,email,avatar_url)")
+    .eq("event_id", eventId)
+    .order("checked_in_at", { ascending: true });
+  if (error) return { ok: false as const, message: error.message };
+  return { ok: true as const, rows: data ?? [] };
+}
+
+export async function getEventRegistrations(eventId: string) {
+  if (!isSupabaseConfigured) return { ok: false as const, message: "Chưa cấu hình Supabase." };
+  const supabase = await createClient();
+  if (!supabase) return { ok: false as const, message: "Không tạo được kết nối." };
+  const { data, error } = await supabase
+    .from("event_registrations")
+    .select("*")
+    .eq("event_id", eventId)
+    .order("registered_at", { ascending: false });
+  if (error) return { ok: false as const, message: error.message };
+  return { ok: true as const, rows: data ?? [] };
 }

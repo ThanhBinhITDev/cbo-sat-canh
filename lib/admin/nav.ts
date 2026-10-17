@@ -68,6 +68,20 @@ export const ADMIN_NAV: NavGroup[] = [
     ],
   },
   {
+    key: "projects",
+    label: "Dự án",
+    items: [
+      { href: "/admin/du-an", label: "Danh sách dự án", roles: ["admin", "editor", "collaborator"], manageOnly: true },
+    ],
+  },
+  {
+    key: "events",
+    label: "Hoạt động",
+    items: [
+      { href: "/admin/hoat-dong", label: "Danh sách hoạt động", roles: ["admin", "editor", "collaborator"], manageOnly: true },
+    ],
+  },
+  {
     key: "contact",
     label: "Liên hệ",
     items: [
@@ -96,6 +110,14 @@ const EXTRA_LABELS: Record<string, string> = {
   "/admin/huy-chuong": "Huy chương",
   "/admin/huy-chuong/moi": "Thêm huy chương",
   "/admin/huy-chuong/[id]/sua": "Sửa huy chương",
+  "/admin/du-an": "Dự án",
+  "/admin/du-an/moi": "Thêm dự án",
+  "/admin/du-an/[id]": "Chi tiết dự án",
+  "/admin/du-an/[id]/sua": "Sửa dự án",
+  "/admin/hoat-dong": "Hoạt động",
+  "/admin/hoat-dong/moi": "Thêm hoạt động",
+  "/admin/hoat-dong/[id]": "Chi tiết hoạt động",
+  "/admin/hoat-dong/[id]/sua": "Sửa hoạt động",
 };
 
 export function visibleNav(

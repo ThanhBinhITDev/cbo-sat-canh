@@ -328,6 +328,12 @@ function revalidateAchievements() {
   revalidatePath("/admin/huy-chuong");
   revalidatePath("/admin/xep-hang");
 }
+function revalidateProjects() {
+  revalidatePath("/admin/du-an");
+}
+function revalidateEvents() {
+  revalidatePath("/admin/hoat-dong");
+}
 
 async function audit(actorId: string, action: string, table: string, recordId: string, payload: Record<string, unknown>) {
   try {
@@ -593,5 +599,192 @@ export async function deleteMedal(
     await audit(user.id, "medal.delete", "medals", id, {});
     revalidateAchievements();
     return { ok: true, message: "Đã xóa huy chương." };
+  });
+}
+
+/* ------------------------------------------------------------------ *
+ * Giai đoạn 3 — Dự án & Hoạt động
+ * ------------------------------------------------------------------ */
+
+const PROJECT_STATUSES = ["planning", "active", "on_hold", "completed", "cancelled"] as const;
+const EVENT_STATUSES = ["draft", "published", "cancelled", "completed"] as const;
+const EVENT_TYPES = ["meeting", "workshop", "outreach", "training", "other"] as const;
+const ATT_STATUSES = ["invited", "confirmed", "declined", "attended", "no_show"] as const;
+const REG_STATUSES = ["registered", "confirmed", "attended", "declined", "cancelled"] as const;
+
+export async function saveProject(
+  _prev: ActionState | null,
+  formData: FormData,
+): Promise<ActionState> {
+  return wrap("lưu dự án", async () => {
+    const user = await requireManager();
+    const supabase = await createClient();
+    if (!supabase) return { ok: false, message: "Chưa cấu hình Supabase." };
+
+    const id = str(formData.get("id"));
+    const name = str(formData.get("name"), 160);
+    const code = str(formData.get("code"), 60) || null;
+    const status = str(formData.get("status")) as (typeof PROJECT_STATUSES)[number];
+    const start_date = str(formData.get("start_date")) || null;
+    const end_date = str(formData.get("end_date")) || null;
+    const leader_id = str(formData.get("leader_id")) || null;
+    const cover_url = str(formData.get("cover_url")) || null;
+    const description = str(formData.get("description"), 2000) || null;
+    const internal_note = str(formData.get("internal_note"), 2000) || null;
+
+    if (!name) return { ok: false, message: "Vui lòng nhập tên dự án." };
+    if (!PROJECT_STATUSES.includes(status)) return { ok: false, message: "Trạng thái không hợp lệ." };
+
+    const row: Record<string, unknown> = {
+      name,
+      code,
+      status,
+      start_date,
+      end_date,
+      leader_id,
+      cover_url,
+      description,
+      internal_note,
+    };
+    if (id) {
+      const { error } = await supabase.from("projects").update(row).eq("id", id);
+      if (error) return { ok: false, message: `Không lưu được: ${error.message}` };
+      await audit(user.id, "project.update", "projects", id, { name });
+    } else {
+      const { data, error } = await supabase.from("projects").insert(row).select("id").single();
+      if (error) return { ok: false, message: `Không lưu được: ${error.message}` };
+      await audit(user.id, "project.create", "projects", data?.id ?? "", { name });
+    }
+    revalidateProjects();
+    return { ok: true, message: id ? "Đã cập nhật dự án." : "Đã thêm dự án." };
+  });
+}
+
+export async function deleteProject(
+  _prev: ActionState | null,
+  formData: FormData,
+): Promise<ActionState> {
+  return wrap("xoá dự án", async () => {
+    const user = await requireManager();
+    const supabase = await createClient();
+    if (!supabase) return { ok: false, message: "Chưa cấu hình Supabase." };
+    const id = str(formData.get("id"));
+    const { error } = await supabase.from("projects").delete().eq("id", id);
+    if (error) return { ok: false, message: `Không xoá được: ${error.message}` };
+    await audit(user.id, "project.delete", "projects", id, {});
+    revalidateProjects();
+    return { ok: true, message: "Đã xoá dự án." };
+  });
+}
+
+export async function addProjectMember(
+  _prev: ActionState | null,
+  formData: FormData,
+): Promise<ActionState> {
+  return wrap("thêm thành viên dự án", async () => {
+    const user = await requireManager();
+    const supabase = await createClient();
+    if (!supabase) return { ok: false, message: "Chưa cấu hình Supabase." };
+    const project_id = str(formData.get("project_id"));
+    const profile_id = str(formData.get("profile_id"));
+    const role = str(formData.get("role")) as "lead" | "member" | "support";
+    const status = (str(formData.get("status")) || "active") as "active" | "inactive";
+    if (!project_id || !profile_id) return { ok: false, message: "Thiếu thông tin." };
+    const { error } = await supabase.from("project_members").upsert(
+      { project_id, profile_id, role, status },
+      { onConflict: "project_id,profile_id" },
+    );
+    if (error) return { ok: false, message: `Không thêm được: ${error.message}` };
+    await audit(user.id, "project.member.add", "project_members", project_id, { profile_id });
+    revalidateProjects();
+    return { ok: true, message: "Đã cập nhật thành viên dự án." };
+  });
+}
+
+export async function removeProjectMember(
+  _prev: ActionState | null,
+  formData: FormData,
+): Promise<ActionState> {
+  return wrap("xoá thành viên dự án", async () => {
+    const user = await requireManager();
+    const supabase = await createClient();
+    if (!supabase) return { ok: false, message: "Chưa cấu hình Supabase." };
+    const id = str(formData.get("id"));
+    const { error } = await supabase.from("project_members").delete().eq("id", id);
+    if (error) return { ok: false, message: `Không xoá được: ${error.message}` };
+    await audit(user.id, "project.member.remove", "project_members", id, {});
+    revalidateProjects();
+    return { ok: true, message: "Đã xoá thành viên." };
+  });
+}
+
+export async function saveEvent(
+  _prev: ActionState | null,
+  formData: FormData,
+): Promise<ActionState> {
+  return wrap("lưu hoạt động", async () => {
+    const user = await requireManager();
+    const supabase = await createClient();
+    if (!supabase) return { ok: false, message: "Chưa cấu hình Supabase." };
+    const id = str(formData.get("id"));
+    const name = str(formData.get("name"), 160);
+    const code = str(formData.get("code"), 60) || null;
+    const project_id = str(formData.get("project_id")) || null;
+    const status = str(formData.get("status")) as (typeof EVENT_STATUSES)[number];
+    const type = str(formData.get("type")) as (typeof EVENT_TYPES)[number];
+    const start_at = str(formData.get("start_at")) || null;
+    const end_at = str(formData.get("end_at")) || null;
+    const location = str(formData.get("location"), 200) || null;
+    const capacity = num(formData.get("capacity"), -1);
+    const cover_url = str(formData.get("cover_url")) || null;
+    const description = str(formData.get("description"), 2000) || null;
+    const internal_note = str(formData.get("internal_note"), 2000) || null;
+    const organizer_id = str(formData.get("organizer_id")) || null;
+    if (!name) return { ok: false, message: "Vui lòng nhập tên hoạt động." };
+    if (!EVENT_STATUSES.includes(status)) return { ok: false, message: "Trạng thái không hợp lệ." };
+    if (!EVENT_TYPES.includes(type)) return { ok: false, message: "Loại hoạt động không hợp lệ." };
+    const row: Record<string, unknown> = {
+      name,
+      code,
+      project_id,
+      status,
+      type,
+      start_at,
+      end_at,
+      location,
+      capacity: capacity >= 0 ? Math.trunc(capacity) : null,
+      cover_url,
+      description,
+      internal_note,
+      organizer_id,
+    };
+    if (id) {
+      const { error } = await supabase.from("events").update(row).eq("id", id);
+      if (error) return { ok: false, message: `Không lưu được: ${error.message}` };
+      await audit(user.id, "event.update", "events", id, { name });
+    } else {
+      const { data, error } = await supabase.from("events").insert(row).select("id").single();
+      if (error) return { ok: false, message: `Không lưu được: ${error.message}` };
+      await audit(user.id, "event.create", "events", data?.id ?? "", { name });
+    }
+    revalidateEvents();
+    return { ok: true, message: id ? "Đã cập nhật hoạt động." : "Đã thêm hoạt động." };
+  });
+}
+
+export async function deleteEvent(
+  _prev: ActionState | null,
+  formData: FormData,
+): Promise<ActionState> {
+  return wrap("xoá hoạt động", async () => {
+    const user = await requireManager();
+    const supabase = await createClient();
+    if (!supabase) return { ok: false, message: "Chưa cấu hình Supabase." };
+    const id = str(formData.get("id"));
+    const { error } = await supabase.from("events").delete().eq("id", id);
+    if (error) return { ok: false, message: `Không xoá được: ${error.message}` };
+    await audit(user.id, "event.delete", "events", id, {});
+    revalidateEvents();
+    return { ok: true, message: "Đã xoá hoạt động." };
   });
 }
