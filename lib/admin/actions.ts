@@ -26,6 +26,7 @@ import {
   type LoaderConfig,
 } from "@/lib/loader";
 import { storagePathFromPublicUrl } from "@/lib/avatar";
+import { collectUsedPaths, SITE_ASSETS_BUCKET } from "@/lib/admin/storage";
 import { toDirectImageUrl } from "@/lib/drive-link";
 import { SUPABASE_URL } from "@/lib/env";
 import { cleanPostHtml, htmlToText } from "@/lib/sanitize";
@@ -1150,6 +1151,61 @@ export async function deleteMedia(_prev: ActionState | null, formData: FormData)
   revalidatePath("/admin/anh");
     flash(backPath, "Đã xoá ảnh.");
   });
+}
+
+/* ------------------------------------------------------------------ *
+ * Lưu trữ (đọc/ dọn tệp trong bucket site-assets)
+ * ------------------------------------------------------------------ */
+
+/**
+ * Xoá tệp khỏi bucket theo path. Chỉ cho phép tệp mồ côi; tệp đang dùng phải
+ * bật `force` (đã cảnh báo ở giao diện). Kiểm tra lại ngay trước khi xoá để
+ * tránh xoá nhầm tệp vừa được dùng lại.
+ */
+export async function deleteStorageFiles(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
+  const path = "/admin/luu-tru";
+  return safeAction("xoá tệp lưu trữ", () =>
+    run(async () => {
+      try {
+        await requireRole(["admin"]);
+      } catch (e) {
+        guard(e, path);
+      }
+      await assertWritable(path);
+
+      const admin = createAdminClient();
+      if (!admin) fail(path, "Chưa cấu hình Supabase (thiếu SUPABASE_SECRET_KEY).");
+
+      const paths = str(formData.get("paths"), 40_000)
+        .split("\n")
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .slice(0, 200);
+      if (!paths.length) fail(path, "Không có tệp nào để xoá.");
+
+      const force = bool(formData.get("force"));
+
+      const used = await collectUsedPaths(admin);
+      const blocked = paths.filter((p) => used.has(p));
+      if (blocked.length && !force) {
+        fail(
+          path,
+          `Có ${blocked.length} tệp đang được sử dụng. Bỏ chọn chúng hoặc xác nhận vẫn xoá.`,
+        );
+      }
+
+      const { error } = await admin.storage.from(SITE_ASSETS_BUCKET).remove(paths);
+      if (error) fail(path, `Không xoá được tệp: ${error.message}`);
+
+      // Dọn dòng thư viện ảnh trỏ tới tệp vừa xoá để không còn liên kết hỏng.
+      const { error: dbErr } = await admin.from("media").delete().in("storage_path", paths);
+      if (dbErr) console.error("[admin:xoá-tệp-dọn-media]", dbErr);
+
+      revalidatePath("/admin/luu-tru");
+      revalidatePath("/admin/anh");
+      flash(path, `Đã xoá ${paths.length} tệp khỏi kho lưu trữ.`);
+    }),
+  );
 }
 
 /* ------------------------------------------------------------------ *

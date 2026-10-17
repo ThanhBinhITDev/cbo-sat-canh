@@ -61,6 +61,7 @@ export const ADMIN_NAV: NavGroup[] = [
     label: "Hệ thống",
     items: [
       { href: "/admin/tai-khoan", label: "Tài khoản", roles: ["admin"] },
+      { href: "/admin/luu-tru", label: "Lưu trữ", roles: ["admin"] },
     ],
   },
 ];

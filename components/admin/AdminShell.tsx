@@ -21,6 +21,7 @@ import {
   Menu,
   X,
   Home,
+  HardDrive,
 } from "lucide-react";
 import Image from "next/image";
 import { signOut } from "@/app/admin/actions";
@@ -45,6 +46,7 @@ const ICONS: Record<string, ReactNode> = {
   "/admin/cau-hoi": <CircleHelp size={18} />,
   "/admin/newsletter": <Mail size={18} />,
   "/admin/tai-khoan": <UserCog size={18} />,
+  "/admin/luu-tru": <HardDrive size={18} />,
 };
 
 const ROLE_LABELS: Record<Role, string> = {
