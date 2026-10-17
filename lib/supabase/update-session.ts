@@ -7,6 +7,13 @@ import {
 } from "@/lib/env";
 
 /**
+ * Cờ bypass đăng nhập chỉ có tác dụng ngoài production. Trên production,
+ * `PROBE_NO_AUTH` bị bỏ qua để không thể vô tình tắt xác thực.
+ */
+const probeEnabled =
+  process.env.NODE_ENV !== "production" && process.env.PROBE_NO_AUTH === "1";
+
+/**
  * Làm mới phiên Supabase và bảo vệ /admin/*.
  * Chạy trong proxy.ts (Next.js 16 — thay cho middleware.ts).
  */
@@ -51,7 +58,7 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  // KHÔNG gọi getUser() ở đây — chỉ refresh token để cookie không hết hạn.
+  // getUser() vừa làm mới token (giữ cookie sống) vừa xác thực người dùng.
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -68,12 +75,8 @@ export async function updateSession(request: NextRequest) {
     return response;
   }
 
-  // TODO(PROBE): bypass đăng nhập tạm — gỡ `&& process.env.PROBE_NO_AUTH !== "1"` sau khi dò xong UI.
-  if (
-    path.startsWith("/admin") &&
-    !user &&
-    process.env.PROBE_NO_AUTH !== "1"
-  ) {
+  // TODO(PROBE): bypass đăng nhập tạm — chỉ hoạt động ngoài production.
+  if (path.startsWith("/admin") && !user && !probeEnabled) {
     const url = request.nextUrl.clone();
     url.pathname = "/admin/login";
     url.search = path !== "/admin" ? `?den=${encodeURIComponent(path)}` : "";
@@ -81,11 +84,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // API quản trị: trả 401 JSON thay vì chuyển hướng trang.
-  if (
-    path.startsWith("/api/admin") &&
-    !user &&
-    process.env.PROBE_NO_AUTH !== "1"
-  ) {
+  if (path.startsWith("/api/admin") && !user && !probeEnabled) {
     return NextResponse.json(
       { error: "Unauthorized" },
       { status: 401 },

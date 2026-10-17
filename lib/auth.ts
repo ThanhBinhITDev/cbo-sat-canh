@@ -9,10 +9,12 @@ export type SessionUser = {
 
 /**
  * TODO(PROBE): bypass đăng nhập tạm — chỉ chạy khi khởi động dev với
- * `PROBE_NO_AUTH=1`. GỠ dòng này + nhánh trong getSessionUser sau khi dò xong UI.
+ * `PROBE_NO_AUTH=1`. Bị vô hiệu hoá hoàn toàn khi NODE_ENV=production để
+ * không thể vô tình mở khoá xác thực trên production.
+ * GỠ dòng này + nhánh trong getSessionUser sau khi dò xong UI.
  */
 const PROBE_USER: SessionUser | null =
-  process.env.PROBE_NO_AUTH === "1"
+  process.env.NODE_ENV !== "production" && process.env.PROBE_NO_AUTH === "1"
     ? {
         id: "probe-session",
         email: "thanhbinhit@gmail.com",
