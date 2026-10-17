@@ -59,6 +59,8 @@ const ICONS: Record<string, ReactNode> = {
   "/admin/du-an": <ListChecks size={18} />,
   "/admin/hoat-dong": <ClipboardList size={18} />,
   "/admin/tai-lieu": <FileText size={18} />,
+  "/admin/thong-bao": <Mail size={18} />,
+  "/admin/bao-cao": <ClipboardList size={18} />,
 };
 
 const ROLE_LABELS: Record<Role, string> = {
