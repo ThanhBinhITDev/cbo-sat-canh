@@ -12,6 +12,7 @@ import ConfirmSubmit from "@/components/admin/ConfirmSubmit";
 import { getTeamAdmin } from "@/lib/admin/data";
 import { deleteTeamMember, saveTeamMember } from "@/lib/admin/actions";
 import { ToastForm } from "@/components/admin/ProfileForms";
+import AvatarUploadField from "@/components/admin/AvatarUploadField";
 
 export default async function TeamAdminPage({
   searchParams,
@@ -149,14 +150,17 @@ export default async function TeamAdminPage({
                   />
                 </Field>
 
-                <Field label="Ảnh đại diện (URL)">
-                  <input
+                <div className="field">
+                  <span className="field-label">Ảnh đại diện</span>
+                  <AvatarUploadField
                     name="avatar_url"
                     defaultValue={editing?.avatar_url ?? ""}
-                    placeholder="https://..."
-                    className="input"
+                    fallbackText={editing?.full_name ?? ""}
                   />
-                </Field>
+                  <span className="hint">
+                    Chọn ảnh rồi cắt khung vuông 1:1, hoặc dán URL ảnh.
+                  </span>
+                </div>
 
                 <Field label="Tiểu sử ngắn" hint="Tối đa 600 ký tự">
                   <textarea

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Camera, Loader2, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -9,6 +9,7 @@ import {
   storagePathFromPublicUrl,
   validateAvatarFile,
 } from "@/lib/avatar";
+import ImageCropper from "./ImageCropper";
 
 const BUCKET = "site-assets";
 
@@ -25,6 +26,35 @@ export default function AvatarPicker({
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
+
+  // Thu hồi object URL của ảnh đang cắt khi component gỡ bỏ.
+  useEffect(() => {
+    return () => {
+      if (cropSrc) URL.revokeObjectURL(cropSrc);
+    };
+  }, [cropSrc]);
+
+  function onFilePicked(file: File) {
+    setError(null);
+    const invalid = validateAvatarFile(file);
+    if (invalid) {
+      setError(invalid);
+      return;
+    }
+    if (cropSrc) URL.revokeObjectURL(cropSrc);
+    setCropSrc(URL.createObjectURL(file));
+  }
+
+  function closeCrop() {
+    if (cropSrc) URL.revokeObjectURL(cropSrc);
+    setCropSrc(null);
+  }
+
+  function onCropped(file: File) {
+    closeCrop();
+    void saveAvatar(file);
+  }
 
   async function saveAvatar(file: File) {
     setError(null);
@@ -110,7 +140,7 @@ export default function AvatarPicker({
           onChange={(e) => {
             const f = e.target.files?.[0];
             e.target.value = "";
-            if (f) void saveAvatar(f);
+            if (f) onFilePicked(f);
           }}
         />
         <div className="flex flex-wrap gap-2">
@@ -133,13 +163,28 @@ export default function AvatarPicker({
             </button>
           )}
         </div>
-        <p className="text-xs text-ink/55">PNG, JPG, WEBP, GIF, AVIF · tối đa 5MB.</p>
+        <p className="text-xs text-ink/55">
+          PNG, JPG, WEBP, GIF, AVIF · tối đa 5MB · cắt vuông 1:1 sau khi chọn.
+        </p>
         {error && (
           <p className="alert-error !mb-0" role="alert">
             {error}
           </p>
         )}
       </div>
+
+      {cropSrc && (
+        <ImageCropper
+          src={cropSrc}
+          title="Cắt ảnh đại diện"
+          aspect={1}
+          cropShape="round"
+          maxDimension={512}
+          fileNamePrefix="avatar"
+          onCancel={closeCrop}
+          onCrop={onCropped}
+        />
+      )}
     </div>
   );
 }
