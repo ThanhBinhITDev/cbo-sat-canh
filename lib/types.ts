@@ -9,6 +9,8 @@ export type Profile = {
   role: Role;
   avatar_url: string | null;
   is_active: boolean;
+  /** Được phép quản lý nhiệm vụ (giao việc, duyệt kết quả) do admin cấp. */
+  can_manage_tasks: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -192,3 +194,144 @@ export const ROLE_LABELS: Record<Role, string> = {
   editor: "Biên tập viên",
   collaborator: "Cộng tác viên",
 };
+
+/* ------------------------------------------------------------------ *
+ * Cộng tác — nhiệm vụ (Giai đoạn 1)
+ * ------------------------------------------------------------------ */
+
+export type TaskStatus =
+  | "assigned"
+  | "accepted"
+  | "in_progress"
+  | "submitted"
+  | "needs_revision"
+  | "completed"
+  | "cancelled";
+
+export type TaskPriority = "low" | "normal" | "high" | "urgent";
+
+export type TaskAssigneeRole = "lead" | "member" | "support";
+
+export type TaskUpdateKind =
+  | "comment"
+  | "progress"
+  | "result"
+  | "revision_request"
+  | "approval"
+  | "accept"
+  | "cancel"
+  | "status_change";
+
+export type TaskCategory = {
+  id: string;
+  key: string;
+  label: string;
+  description: string | null;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+};
+
+export type Task = {
+  id: string;
+  title: string;
+  description: string | null;
+  category_id: string | null;
+  project_id: string | null;
+  created_by: string | null;
+  priority: TaskPriority;
+  status: TaskStatus;
+  start_date: string | null;
+  due_date: string | null;
+  acceptance_criteria: string | null;
+  points_estimated: number;
+  internal_note: string | null;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type TaskAssignee = {
+  id: string;
+  task_id: string;
+  profile_id: string;
+  role_in_task: TaskAssigneeRole;
+  status: TaskStatus;
+  accepted_at: string | null;
+  completed_at: string | null;
+  points_awarded: number;
+  created_at: string;
+};
+
+export type TaskUpdate = {
+  id: string;
+  task_id: string;
+  author_id: string | null;
+  kind: TaskUpdateKind;
+  body: string | null;
+  status_from: TaskStatus | null;
+  status_to: TaskStatus | null;
+  created_at: string;
+};
+
+export type TaskAttachment = {
+  id: string;
+  task_id: string;
+  name: string | null;
+  url: string;
+  kind: "reference" | "result";
+  uploaded_by: string | null;
+  created_at: string;
+};
+
+/** Thành viên nội bộ (từ RPC collab_members — chỉ staff đọc được). */
+export type CollabMember = {
+  id: string;
+  full_name: string;
+  email: string;
+  role: Role;
+  avatar_url: string | null;
+  can_manage_tasks: boolean;
+  is_active: boolean;
+};
+
+export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
+  assigned: "Chờ nhận",
+  accepted: "Đã nhận",
+  in_progress: "Đang thực hiện",
+  submitted: "Chờ duyệt",
+  needs_revision: "Cần chỉnh sửa",
+  completed: "Hoàn thành",
+  cancelled: "Đã huỷ",
+};
+
+export const TASK_PRIORITY_LABELS: Record<TaskPriority, string> = {
+  low: "Thấp",
+  normal: "Bình thường",
+  high: "Cao",
+  urgent: "Khẩn cấp",
+};
+
+export const TASK_UPDATE_LABELS: Record<TaskUpdateKind, string> = {
+  comment: "Bình luận",
+  progress: "Cập nhật tiến độ",
+  result: "Gửi kết quả",
+  revision_request: "Yêu cầu chỉnh sửa",
+  approval: "Duyệt hoàn thành",
+  accept: "Nhận nhiệm vụ",
+  cancel: "Huỷ nhiệm vụ",
+  status_change: "Đổi trạng thái",
+};
+
+/** Thứ tự nhóm trạng thái hiển thị trong danh sách/bộ lọc. */
+export const TASK_STATUS_ORDER: TaskStatus[] = [
+  "assigned",
+  "accepted",
+  "in_progress",
+  "submitted",
+  "needs_revision",
+  "completed",
+  "cancelled",
+];
+
+export const TASK_PRIORITY_ORDER: TaskPriority[] = ["urgent", "high", "normal", "low"];

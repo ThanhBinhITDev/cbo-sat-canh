@@ -6,6 +6,8 @@ export type NavLeaf = {
   label: string;
   roles: Role[];
   exact?: boolean;
+  /** Chỉ hiện khi người dùng có quyền quản lý cộng tác (admin hoặc được cấp). */
+  manageOnly?: boolean;
 };
 
 export type NavGroup = {
@@ -49,6 +51,14 @@ export const ADMIN_NAV: NavGroup[] = [
     ],
   },
   {
+    key: "collab",
+    label: "Cộng tác",
+    items: [
+      { href: "/admin/viec-cua-toi", label: "Việc của tôi", roles: ["admin", "editor", "collaborator"] },
+      { href: "/admin/nhiem-vu", label: "Nhiệm vụ", roles: ["admin", "editor", "collaborator"], manageOnly: true },
+    ],
+  },
+  {
     key: "contact",
     label: "Liên hệ",
     items: [
@@ -71,10 +81,16 @@ const EXTRA_LABELS: Record<string, string> = {
   "/admin/ho-so": "Hồ sơ của tôi",
 };
 
-export function visibleNav(role: Role): NavGroup[] {
+export function visibleNav(
+  role: Role,
+  opts: { canManage?: boolean } = {},
+): NavGroup[] {
   return ADMIN_NAV.map((group) => ({
     ...group,
-    items: group.items.filter((item) => item.roles.includes(role)),
+    items: group.items.filter(
+      (item) =>
+        item.roles.includes(role) && (!item.manageOnly || Boolean(opts.canManage)),
+    ),
   })).filter((group) => group.items.length > 0);
 }
 

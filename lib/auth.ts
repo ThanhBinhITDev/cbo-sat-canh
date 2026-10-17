@@ -26,6 +26,7 @@ const PROBE_USER: SessionUser | null =
           role: "admin",
           avatar_url: null,
           is_active: true,
+          can_manage_tasks: true,
           created_at: "",
           updated_at: "",
         },

@@ -6,7 +6,7 @@ import ConfirmSubmit from "@/components/admin/ConfirmSubmit";
 import AccountCreateForm from "@/components/admin/AccountCreateForm";
 import { ToastForm } from "@/components/admin/ProfileForms";
 import { getProfilesAdmin } from "@/lib/admin/data";
-import { toggleAccountActive, updateAccountRole } from "@/lib/admin/actions";
+import { toggleAccountActive, updateAccountRole, toggleManageTasks } from "@/lib/admin/actions";
 import { getSessionUser } from "@/lib/auth";
 import { ROLE_LABELS, type Role } from "@/lib/types";
 import { formatDate } from "@/lib/format";
@@ -76,6 +76,7 @@ export default async function AccountsPage({
                       <th>Họ tên</th>
                       <th>Email</th>
                       <th>Vai trò</th>
+                      <th>Quyền cộng tác</th>
                       <th>Trạng thái</th>
                       <th>Tạo lúc</th>
                       <th className="text-right">Thao tác</th>
@@ -140,6 +141,32 @@ export default async function AccountsPage({
                                   className="rounded-lg border border-line px-2 py-1.5 text-[11px] font-bold text-ink/60 hover:border-primary hover:text-primary"
                                 >
                                   Lưu
+                                </button>
+                              </ToastForm>
+                            )}
+                          </td>
+                          <td>
+                            {row.role === "admin" ? (
+                              <span className="badge badge-blue">Toàn quyền</span>
+                            ) : (
+                              <ToastForm
+                                action={toggleManageTasks}
+                                loading="Đang cập nhật quyền cộng tác..."
+                              >
+                                <input type="hidden" name="id" value={row.id} />
+                                <input
+                                  type="hidden"
+                                  name="can_manage_tasks"
+                                  value={String(row.can_manage_tasks)}
+                                />
+                                <button
+                                  type="submit"
+                                  className={`badge ${
+                                    row.can_manage_tasks ? "badge-green" : "badge-gray"
+                                  }`}
+                                  title="Bấm để bật/tắt quyền quản lý nhiệm vụ"
+                                >
+                                  {row.can_manage_tasks ? "Được cấp" : "Chưa cấp"}
                                 </button>
                               </ToastForm>
                             )}

@@ -22,6 +22,8 @@ import {
   X,
   Home,
   HardDrive,
+  ListChecks,
+  ClipboardList,
 } from "lucide-react";
 import Image from "next/image";
 import { signOut } from "@/app/admin/actions";
@@ -47,6 +49,8 @@ const ICONS: Record<string, ReactNode> = {
   "/admin/newsletter": <Mail size={18} />,
   "/admin/tai-khoan": <UserCog size={18} />,
   "/admin/luu-tru": <HardDrive size={18} />,
+  "/admin/viec-cua-toi": <ClipboardList size={18} />,
+  "/admin/nhiem-vu": <ListChecks size={18} />,
 };
 
 const ROLE_LABELS: Record<Role, string> = {
@@ -62,6 +66,7 @@ export default function AdminShell({
   role,
   avatarUrl,
   logoSquareUrl,
+  canManageTasks = false,
 }: {
   children: ReactNode;
   fullName: string;
@@ -69,10 +74,11 @@ export default function AdminShell({
   role: Role;
   avatarUrl?: string | null;
   logoSquareUrl?: string | null;
+  canManageTasks?: boolean;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const groups = visibleNav(role);
+  const groups = visibleNav(role, { canManage: canManageTasks });
   const crumbs = buildBreadcrumbs(pathname);
   const initial = (fullName || email).slice(0, 1).toUpperCase();
 

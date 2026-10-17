@@ -4,6 +4,7 @@ import { getSessionUser } from "@/lib/auth";
 import { getQuotaStatus } from "@/lib/admin/data";
 import { getSettings } from "@/lib/settings";
 import { normalizeBrand } from "@/lib/brand";
+import { canManageCollab } from "@/lib/collab";
 import AdminShell from "@/components/admin/AdminShell";
 import QuotaBanner from "@/components/admin/QuotaBanner";
 
@@ -42,6 +43,7 @@ export default async function ProtectedLayout({
       role={user.profile.role}
       avatarUrl={user.profile.avatar_url}
       logoSquareUrl={brand.logoSquare}
+      canManageTasks={canManageCollab(user.profile)}
     >
       {quota?.ok && <QuotaBanner usage={quota.value} />}
       {children}

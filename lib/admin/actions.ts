@@ -1376,6 +1376,32 @@ export async function toggleAccountActive(_prev: ActionState | null, formData: F
   });
 }
 
+/** Cấp/thu quyền quản lý cộng tác (giao việc, duyệt kết quả) cho một tài khoản. */
+export async function toggleManageTasks(_prev: ActionState | null, formData: FormData): Promise<ActionState> {
+  const path = "/admin/tai-khoan";
+  return run(async () => {
+    try {
+      await requireRole(["admin"]);
+    } catch (e) {
+      guard(e, path);
+    }
+    await assertWritable(path);
+
+    const id = str(formData.get("id"));
+    const next = !bool(formData.get("can_manage_tasks"));
+
+    const err = await write(
+      "profiles",
+      { id, can_manage_tasks: next, updated_at: new Date().toISOString() },
+      { onConflict: "id" },
+    );
+    if (err) fail(path, `Không cập nhật được: ${err}`);
+
+    revalidatePath(path);
+    flash(path, next ? "Đã cấp quyền quản lý cộng tác." : "Đã thu quyền quản lý cộng tác.");
+  });
+}
+
 export async function createAccount(
   _prev: ActionState | null,
   formData: FormData,
